@@ -1,2 +1,2 @@
 # Simplão Invest
-Simulador de investimento gratuito.
+Simulador de investimento.
