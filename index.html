@@ -1,112 +1,205 @@
-// =============================
-// FORMATADOR DE VALORES (R$)
-// =============================
-function formatarReal(input) {
-  let val = input.value.replace(/\D/g, "");
-  val = (val / 100).toFixed(2) + "";
-  val = val.replace(".", ",");
-  val = val.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
-  input.value = "R$ " + val;
-}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Simulador de Investimentos • Simplão Invest</title>
 
-document.querySelectorAll('input[type="text"][inputmode="numeric"]').forEach(input => {
-  input.addEventListener("input", () => formatarReal(input));
-  input.addEventListener("focus", () => {
-    input.value = input.value.replace(/\D/g, "") / 100 || "";
-  });
-});
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="container header">
+    <div class="brand">
+      <img src="favicon.png" alt="" style="width:24px;height:24px;margin-right:8px;opacity:.7" />
+      <div>
+        <h1>Simulador de Investimentos</h1>
+        <p class="subtitle">Por <strong>Simplão Invest</strong> — 100% gratuito e sem anúncios.</p>
+      </div>
+    </div>
+  </header>
 
-// =============================
-// CONTROLE DE CAMPOS DE TAXA
-// =============================
-const FIELDS_BY_REGIME = {
-  pre:  ["taxaPre"],
-  pos:  ["percentCDI", "cdiAnual"],
-  ipca: ["ipcaAnual", "taxaFixa"],
-};
+  <main class="container grid">
+    <!-- Parâmetros (lado esquerdo) -->
+    <section class="card">
+      <h2>Parâmetros — Investimento A</h2>
 
-function updateVisibleFields(formId) {
-  const form = document.getElementById(formId);
-  const regime = form.querySelector('[data-input="regime"] select').value;
-  const visible = FIELDS_BY_REGIME[regime] || [];
+      <div class="row two">
+        <div>
+          <label for="tipoA">Tipo</label>
+          <select id="tipoA">
+            <option value="CDB">CDB</option>
+            <option value="Tesouro">Tesouro</option>
+            <option value="LCI">LCI (isento IR)</option>
+            <option value="LCA">LCA (isento IR)</option>
+          </select>
+        </div>
+        <div>
+          <label for="regimeA">Rentabilidade</label>
+          <select id="regimeA" data-inputmode-target="regime">
+            <option value="pre" selected>Pré (a.a.)</option>
+            <option value="pos">Pós (% do CDI)</option>
+            <option value="ipca">IPCA + taxa</option>
+          </select>
+        </div>
+      </div>
 
-  form.querySelectorAll("[data-field]").forEach(row => {
-    const key = row.dataset.field;
-    row.classList.toggle("hidden", !visible.includes(key));
-  });
-}
+      <!-- Campos de taxa: só um bloco deve ficar visível conforme o regime -->
+      <div class="row" data-field="taxaPre">
+        <label for="taxaPreA">Taxa pré (a.a. %)</label>
+        <input id="taxaPreA" type="text" inputmode="numeric" value="12,00" />
+      </div>
 
-// inicializa
-["formA"].forEach(id => {
-  const form = document.getElementById(id);
-  if (!form) return;
-  const select = form.querySelector('[data-input="regime"] select');
-  select.addEventListener("change", () => updateVisibleFields(id));
-  updateVisibleFields(id);
-});
+      <div class="row hidden" data-field="percentCDI">
+        <label for="percentCDIA">% do CDI</label>
+        <input id="percentCDIA" type="text" inputmode="numeric" value="105" />
+      </div>
+      <div class="row hidden" data-field="cdiAnual">
+        <label for="cdiAnualA">CDI anual (a.a. %)</label>
+        <input id="cdiAnualA" type="text" inputmode="numeric" value="10,75" />
+      </div>
 
-// =============================
-// CÁLCULO SIMPLIFICADO
-// =============================
-function limparNumero(str) {
-  if (!str) return 0;
-  return Number(String(str).replace(/[^\d,.-]/g, "").replace(/\./g, "").replace(",", ".")) || 0;
-}
+      <div class="row hidden" data-field="ipcaAnual">
+        <label for="ipcaAnualA">IPCA anual (a.a. %)</label>
+        <input id="ipcaAnualA" type="text" inputmode="numeric" value="4,00" />
+      </div>
+      <div class="row hidden" data-field="taxaFixa">
+        <label for="taxaFixaA">Taxa fixa (a.a. %)</label>
+        <input id="taxaFixaA" type="text" inputmode="numeric" value="6,00" />
+      </div>
 
-function calcularInvestimento() {
-  const aporteInicial = limparNumero(document.getElementById("aporteInicialA").value);
-  const aporteMensal = limparNumero(document.getElementById("aporteMensalA").value);
-  const taxa = parseFloat(document.getElementById("taxaPreA").value) / 100;
-  const meses = parseInt(document.getElementById("prazoMesesA").value);
+      <div class="row two">
+        <div>
+          <label for="aporteInicialA">Aporte inicial (R$)</label>
+          <input id="aporteInicialA" type="text" inputmode="numeric" value="0" />
+        </div>
+        <div>
+          <label for="aporteMensalA">Aporte mensal (R$)</label>
+          <input id="aporteMensalA" type="text" inputmode="numeric" value="500" />
+        </div>
+      </div>
 
-  if (aporteInicial + aporteMensal === 0) {
-    document.querySelectorAll(".kpi .value").forEach(el => (el.textContent = "—"));
-    document.querySelector("#tabela tbody").innerHTML = "";
-    return;
-  }
+      <div class="row two">
+        <div>
+          <label for="prazoMesesA">Prazo (meses)</label>
+          <input id="prazoMesesA" type="number" value="36" min="1" />
+        </div>
+        <div>
+          <label for="iofA">Considerar IOF (0–30 dias)</label>
+          <select id="iofA">
+            <option value="nao" selected>Não (simplificado)</option>
+            <option value="sim">Sim (aproximação)</option>
+          </select>
+        </div>
+      </div>
 
-  let saldo = aporteInicial;
-  const linhas = [];
-  for (let i = 1; i <= meses; i++) {
-    const juros = saldo * (taxa / 12);
-    saldo += juros + aporteMensal;
-    linhas.push({
-      mes: i,
-      data: new Date(new Date().setMonth(new Date().getMonth() + i)).toLocaleDateString("pt-BR"),
-      saldo,
-      aporte: aporteMensal,
-      juros,
-    });
-  }
+      <div class="row">
+        <label for="dataInicioA">Data de início</label>
+        <input id="dataInicioA" type="date" />
+      </div>
 
-  const totalInvestido = aporteInicial + aporteMensal * meses;
-  const rendimentoBruto = saldo - totalInvestido;
-  const impostos = rendimentoBruto * 0.15;
-  const saldoLiquido = saldo - impostos;
+      <div class="row">
+        <label>
+          <input type="checkbox" id="toggleB" />
+          Comparar com Investimento B
+        </label>
+      </div>
 
-  document.getElementById("saldoLiquido").textContent = saldoLiquido.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-  document.getElementById("totalInvestido").textContent = totalInvestido.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-  document.getElementById("rendimentoBruto").textContent = rendimentoBruto.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-  document.getElementById("impostos").textContent = impostos.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+      <!-- Bloco B (opcional) -->
+      <div id="blocoB" class="hidden">
+        <h3>Investimento B (opcional)</h3>
 
-  const tbody = document.querySelector("#tabela tbody");
-  tbody.innerHTML = "";
-  linhas.forEach(l => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${l.mes}</td>
-      <td>${l.data}</td>
-      <td>${l.saldo.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</td>
-      <td>${l.aporte.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</td>
-      <td>${l.juros.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
+        <div class="row two">
+          <div>
+            <label for="tipoB">Tipo</label>
+            <select id="tipoB">
+              <option value="CDB">CDB</option>
+              <option value="Tesouro">Tesouro</option>
+              <option value="LCI">LCI (isento IR)</option>
+              <option value="LCA">LCA (isento IR)</option>
+            </select>
+          </div>
+          <div>
+            <label for="regimeB">Rentabilidade</label>
+            <select id="regimeB" data-inputmode-target="regime">
+              <option value="pre" selected>Pré (a.a.)</option>
+              <option value="pos">Pós (% do CDI)</option>
+              <option value="ipca">IPCA + taxa</option>
+            </select>
+          </div>
+        </div>
 
-document.getElementById("calcularA").addEventListener("click", calcularInvestimento);
+        <div class="row" data-field="taxaPreB">
+          <label for="taxaPreB">Taxa pré (a.a. %)</label>
+          <input id="taxaPreB" type="text" inputmode="numeric" value="11,00" />
+        </div>
 
-// =============================
-// ANO DO FOOTER
-// =============================
-document.getElementById("ano").textContent = new Date().getFullYear();
+        <div class="row hidden" data-field="percentCDIB">
+          <label for="percentCDIB">% do CDI</label>
+          <input id="percentCDIB" type="text" inputmode="numeric" value="105" />
+        </div>
+        <div class="row hidden" data-field="cdiAnualB">
+          <label for="cdiAnualB">CDI anual (a.a. %)</label>
+          <input id="cdiAnualB" type="text" inputmode="numeric" value="10,75" />
+        </div>
+
+        <div class="row hidden" data-field="ipcaAnualB">
+          <label for="ipcaAnualB">IPCA anual (a.a. %)</label>
+          <input id="ipcaAnualB" type="text" inputmode="numeric" value="4,00" />
+        </div>
+        <div class="row hidden" data-field="taxaFixaB">
+          <label for="taxaFixaB">Taxa fixa (a.a. %)</label>
+          <input id="taxaFixaB" type="text" inputmode="numeric" value="6,00" />
+        </div>
+
+        <div class="row two">
+          <div>
+            <label for="aporteInicialB">Aporte inicial (R$)</label>
+            <input id="aporteInicialB" type="text" inputmode="numeric" value="0" />
+          </div>
+          <div>
+            <label for="aporteMensalB">Aporte mensal (R$)</label>
+            <input id="aporteMensalB" type="text" inputmode="numeric" value="500" />
+          </div>
+        </div>
+      </div>
+
+      <button id="calcular" class="btn">Calcular</button>
+      <p class="note">Modelo didático. Indicadores variam; títulos têm regras específicas. Use para estimar e comparar.</p>
+    </section>
+
+    <!-- Resultados (lado direito) -->
+    <section class="card">
+      <h2>Resultados</h2>
+
+      <div class="metrics">
+        <div class="metric"><div class="label">Saldo final líquido</div><div class="value" id="saldoLiquido">—</div></div>
+        <div class="metric"><div class="label">Total investido</div><div class="value" id="totalInvestido">—</div></div>
+        <div class="metric"><div class="label">Rendimento bruto</div><div class="value" id="rendimentoBruto">—</div></div>
+        <div class="metric"><div class="label">Impostos (IR)</div><div class="value" id="impostos">—</div></div>
+      </div>
+
+      <div class="scroll-wrap">
+        <table id="tabela">
+          <thead>
+            <tr>
+              <th>Mês</th>
+              <th>Data</th>
+              <th>Saldo (R$)</th>
+              <th>Aporte (R$)</th>
+              <th>Juros (R$)</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="container footer">
+    <p>© <span id="ano"></span> Simplão Invest • Ferramentas gratuitas para decisões financeiras melhores.</p>
+    <p><a href="politica-privacidade.html">Política de Privacidade</a> • <a href="termos.html">Termos de Uso</a></p>
+  </footer>
+
+  <script src="script.js" defer></script>
+</body>
+</html>
