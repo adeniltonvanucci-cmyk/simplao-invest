@@ -1,231 +1,112 @@
-<!doctype html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Simulador de Investimentos • Simplão Invest</title>
-  <meta name="description" content="Simulador gratuito de investimentos com aportes, IR regressivo e comparação lado a lado.">
-  <link rel="icon" type="image/png" href="favicon.png" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
-</head>
-<body>
-  <header class="container header">
-    <div class="brand">
-      <img src="logo.png" alt="Simplão Invest" class="logo" />
-      <div>
-        <h1>Simulador de Investimentos</h1>
-        <p class="subtitle">Ferramenta gratuita • Sem anúncios • Feita por Simplão Invest</p>
-      </div>
-    </div>
-  </header>
+// =============================
+// FORMATADOR DE VALORES (R$)
+// =============================
+function formatarReal(input) {
+  let val = input.value.replace(/\D/g, "");
+  val = (val / 100).toFixed(2) + "";
+  val = val.replace(".", ",");
+  val = val.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
+  input.value = "R$ " + val;
+}
 
-  <main class="container grid">
-    <!-- PAINEL DE PARÂMETROS -->
-    <section class="card">
-      <div class="card-header">
-        <h2>Parâmetros — Investimento A</h2>
-        <label class="switch">
-          <input id="toggleComparar" type="checkbox" />
-          <span>Comparar com Investimento B</span>
-        </label>
-      </div>
+document.querySelectorAll('input[type="text"][inputmode="numeric"]').forEach(input => {
+  input.addEventListener("input", () => formatarReal(input));
+  input.addEventListener("focus", () => {
+    input.value = input.value.replace(/\D/g, "") / 100 || "";
+  });
+});
 
-      <form id="simForm" autocomplete="off">
-        <div class="row two">
-          <div>
-            <label for="tipo">Tipo</label>
-            <select id="tipo">
-              <option value="CDB" selected>CDB</option>
-              <option value="LCI">LCI (isento IR)</option>
-              <option value="LCA">LCA (isento IR)</option>
-              <option value="Tesouro">Tesouro</option>
-              <option value="Outros">Outros</option>
-            </select>
-          </div>
-          <div>
-            <label for="regime">Rentabilidade</label>
-            <select id="regime">
-              <option value="pre" selected>Pré (a.a.)</option>
-              <option value="pos">% do CDI</option>
-              <option value="ipca">IPCA + taxa (a.a.)</option>
-            </select>
-          </div>
-        </div>
+// =============================
+// CONTROLE DE CAMPOS DE TAXA
+// =============================
+const FIELDS_BY_REGIME = {
+  pre:  ["taxaPre"],
+  pos:  ["percentCDI", "cdiAnual"],
+  ipca: ["ipcaAnual", "taxaFixa"],
+};
 
-        <!-- Pré -->
-        <div class="row" data-show-on="pre">
-          <label for="taxaPre">Taxa pré (a.a. %)</label>
-          <input id="taxaPre" type="text" inputmode="numeric" placeholder="12,00" />
-        </div>
+function updateVisibleFields(formId) {
+  const form = document.getElementById(formId);
+  const regime = form.querySelector('[data-input="regime"] select').value;
+  const visible = FIELDS_BY_REGIME[regime] || [];
 
-        <!-- Pós -->
-        <div class="row" data-show-on="pos">
-          <label for="percentCDI">% do CDI</label>
-          <input id="percentCDI" type="text" inputmode="numeric" placeholder="105,00" />
-        </div>
-        <div class="row" data-show-on="pos">
-          <label for="cdiAnual">CDI anual (a.a. %)</label>
-          <input id="cdiAnual" type="text" inputmode="numeric" placeholder="10,75" />
-        </div>
+  form.querySelectorAll("[data-field]").forEach(row => {
+    const key = row.dataset.field;
+    row.classList.toggle("hidden", !visible.includes(key));
+  });
+}
 
-        <!-- IPCA+ -->
-        <div class="row" data-show-on="ipca">
-          <label for="ipcaAnual">IPCA anual (a.a. %)</label>
-          <input id="ipcaAnual" type="text" inputmode="numeric" placeholder="4,00" />
-        </div>
-        <div class="row" data-show-on="ipca">
-          <label for="spread">Taxa fixa (a.a. %)</label>
-          <input id="spread" type="text" inputmode="numeric" placeholder="6,00" />
-        </div>
+// inicializa
+["formA"].forEach(id => {
+  const form = document.getElementById(id);
+  if (!form) return;
+  const select = form.querySelector('[data-input="regime"] select');
+  select.addEventListener("change", () => updateVisibleFields(id));
+  updateVisibleFields(id);
+});
 
-        <div class="row two">
-          <div>
-            <label for="aporteInicial">Aporte inicial (R$)</label>
-            <input id="aporteInicial" type="text" inputmode="numeric" placeholder="R$ 0,00" />
-          </div>
-          <div>
-            <label for="aporteMensal">Aporte mensal (R$)</label>
-            <input id="aporteMensal" type="text" inputmode="numeric" placeholder="R$ 0,00" />
-          </div>
-        </div>
+// =============================
+// CÁLCULO SIMPLIFICADO
+// =============================
+function limparNumero(str) {
+  if (!str) return 0;
+  return Number(String(str).replace(/[^\d,.-]/g, "").replace(/\./g, "").replace(",", ".")) || 0;
+}
 
-        <div class="row two">
-          <div>
-            <label for="prazoMeses">Prazo (meses)</label>
-            <input id="prazoMeses" type="number" step="1" min="1" value="36" />
-          </div>
-          <div>
-            <label for="iof">Considerar IOF (até 30 dias)</label>
-            <select id="iof">
-              <option value="nao" selected>Não</option>
-              <option value="sim">Sim (aprox.)</option>
-            </select>
-          </div>
-        </div>
+function calcularInvestimento() {
+  const aporteInicial = limparNumero(document.getElementById("aporteInicialA").value);
+  const aporteMensal = limparNumero(document.getElementById("aporteMensalA").value);
+  const taxa = parseFloat(document.getElementById("taxaPreA").value) / 100;
+  const meses = parseInt(document.getElementById("prazoMesesA").value);
 
-        <div class="row">
-          <label for="dataInicio">Data de início</label>
-          <input id="dataInicio" type="date" />
-        </div>
+  if (aporteInicial + aporteMensal === 0) {
+    document.querySelectorAll(".kpi .value").forEach(el => (el.textContent = "—"));
+    document.querySelector("#tabela tbody").innerHTML = "";
+    return;
+  }
 
-        <!-- BLOCO COMPARAÇÃO B -->
-        <div id="boxB" class="compare card-sub is-hidden">
-          <h3>Investimento B (opcional)</h3>
-          <div class="row two">
-            <div>
-              <label for="tipoB">Tipo</label>
-              <select id="tipoB">
-                <option value="CDB" selected>CDB</option>
-                <option value="LCI">LCI (isento IR)</option>
-                <option value="LCA">LCA (isento IR)</option>
-                <option value="Tesouro">Tesouro</option>
-                <option value="Outros">Outros</option>
-              </select>
-            </div>
-            <div>
-              <label for="regimeB">Rentabilidade</label>
-              <select id="regimeB">
-                <option value="pre" selected>Pré (a.a.)</option>
-                <option value="pos">% do CDI</option>
-                <option value="ipca">IPCA + taxa (a.a.)</option>
-              </select>
-            </div>
-          </div>
+  let saldo = aporteInicial;
+  const linhas = [];
+  for (let i = 1; i <= meses; i++) {
+    const juros = saldo * (taxa / 12);
+    saldo += juros + aporteMensal;
+    linhas.push({
+      mes: i,
+      data: new Date(new Date().setMonth(new Date().getMonth() + i)).toLocaleDateString("pt-BR"),
+      saldo,
+      aporte: aporteMensal,
+      juros,
+    });
+  }
 
-          <div class="row" data-show-on-b="pre">
-            <label for="taxaPreB">Taxa pré (a.a. %)</label>
-            <input id="taxaPreB" type="text" inputmode="numeric" placeholder="12,00" />
-          </div>
+  const totalInvestido = aporteInicial + aporteMensal * meses;
+  const rendimentoBruto = saldo - totalInvestido;
+  const impostos = rendimentoBruto * 0.15;
+  const saldoLiquido = saldo - impostos;
 
-          <div class="row" data-show-on-b="pos">
-            <label for="percentCDIB">% do CDI</label>
-            <input id="percentCDIB" type="text" inputmode="numeric" placeholder="105,00" />
-          </div>
-          <div class="row" data-show-on-b="pos">
-            <label for="cdiAnualB">CDI anual (a.a. %)</label>
-            <input id="cdiAnualB" type="text" inputmode="numeric" placeholder="10,75" />
-          </div>
+  document.getElementById("saldoLiquido").textContent = saldoLiquido.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  document.getElementById("totalInvestido").textContent = totalInvestido.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  document.getElementById("rendimentoBruto").textContent = rendimentoBruto.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  document.getElementById("impostos").textContent = impostos.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-          <div class="row" data-show-on-b="ipca">
-            <label for="ipcaAnualB">IPCA anual (a.a. %)</label>
-            <input id="ipcaAnualB" type="text" inputmode="numeric" placeholder="4,00" />
-          </div>
-          <div class="row" data-show-on-b="ipca">
-            <label for="spreadB">Taxa fixa (a.a. %)</label>
-            <input id="spreadB" type="text" inputmode="numeric" placeholder="6,00" />
-          </div>
+  const tbody = document.querySelector("#tabela tbody");
+  tbody.innerHTML = "";
+  linhas.forEach(l => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${l.mes}</td>
+      <td>${l.data}</td>
+      <td>${l.saldo.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</td>
+      <td>${l.aporte.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</td>
+      <td>${l.juros.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
 
-          <div class="row two">
-            <div>
-              <label for="aporteInicialB">Aporte inicial (R$)</label>
-              <input id="aporteInicialB" type="text" inputmode="numeric" placeholder="R$ 0,00" />
-            </div>
-            <div>
-              <label for="aporteMensalB">Aporte mensal (R$)</label>
-              <input id="aporteMensalB" type="text" inputmode="numeric" placeholder="R$ 0,00" />
-            </div>
-          </div>
-        </div>
+document.getElementById("calcularA").addEventListener("click", calcularInvestimento);
 
-        <button type="submit" class="btn">Calcular</button>
-        <p class="note">Modelo didático. Indicadores variam; títulos têm regras específicas. Use para estimar e comparar.</p>
-      </form>
-    </section>
-
-    <!-- RESULTADOS + GRÁFICO -->
-    <section class="card">
-      <h2>Resultados</h2>
-
-      <div class="metrics">
-        <div class="metric">
-          <div class="label">Saldo final líquido</div>
-          <div class="value" id="saldoLiquido">—</div>
-        </div>
-        <div class="metric">
-          <div class="label">Total investido</div>
-          <div class="value" id="totalInvestido">—</div>
-        </div>
-        <div class="metric">
-          <div class="label">Rendimento bruto</div>
-          <div class="value" id="rendimentoBruto">—</div>
-        </div>
-        <div class="metric">
-          <div class="label">Impostos (IR)</div>
-          <div class="value" id="impostos">—</div>
-        </div>
-      </div>
-
-      <div class="chart-wrap">
-        <canvas id="evolucaoChart"></canvas>
-      </div>
-
-      <div class="table-wrap">
-        <table id="tabela">
-          <thead>
-            <tr>
-              <th>Mês</th>
-              <th>Data</th>
-              <th>Saldo (R$)</th>
-              <th>Aporte (R$)</th>
-              <th>Juros (R$)</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </section>
-  </main>
-
-  <footer class="container footer">
-    <p>© <span id="ano"></span> Simplão Invest • Educação financeira na prática.</p>
-    <p><a href="politica-privacidade.html">Política de Privacidade</a> • <a href="termos.html">Termos de Uso</a></p>
-  </footer>
-
-  <!-- Chart.js (CDN) -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" integrity="sha384-vu0mQf3xdx1+TVRXYgVWwC+gUTdJiO2sU5c3p2yPHpCei5pCrq7Vt7VwzEUQF2vZ" crossorigin="anonymous"></script>
-  <script src="script.js"></script>
-</body>
-</html>
+// =============================
+// ANO DO FOOTER
+// =============================
+document.getElementById("ano").textContent = new Date().getFullYear();
