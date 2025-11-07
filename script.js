@@ -1,70 +1,81 @@
-/* =========================
-   Formatadores BR
-   ========================= */
+/* ====== Formatadores ====== */
 const fmtBRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
-/* =========================
-   Conversões e utilitários
-   ========================= */
-function parseMoney(elOrStr) {
-  const str = typeof elOrStr === 'string' ? elOrStr : (elOrStr?.value ?? '');
-  if (!str) return 0;
-  return Number(str.replace(/\s/g, '').replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
+/* Converte "10.000,50" | "10000,50" | "10000" em Number */
+function asNumber(val) {
+  const s = typeof val === 'string' ? val : (val?.value ?? '');
+  if (!s) return 0;
+  return Number(String(s).replace(/\s/g, '').replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
 }
 
+/* ====== Regras de IR ====== */
 function aliquotaIR(prazoMeses) {
-  if (prazoMeses <= 6)  return 0.225;
-  if (prazoMeses <= 12) return 0.20;
-  if (prazoMeses <= 24) return 0.175;
+  const dias = prazoMeses * 30; // aproximação
+  if (dias <= 180) return 0.225;
+  if (dias <= 360) return 0.20;
+  if (dias <= 720) return 0.175;
   return 0.15;
 }
 function isIsentoIR(tipo) {
   return tipo === 'LCI' || tipo === 'LCA';
 }
+
+/* ====== Regimes ====== */
 function taxaAnualPorRegime({ regime, taxaPre, percentCDI, cdiAnual, ipcaAnual, spread }) {
-  const n = (v) => Number(String(v).replace(/\./g, '').replace(',', '.')) || 0;
-  if (regime === 'pre') return n(taxaPre) / 100;
-  if (regime === 'pos') return (n(percentCDI) / 100) * (n(cdiAnual) / 100);
-  if (regime === 'ipca') return (n(ipcaAnual) / 100) + (n(spread) / 100);
+  const n = (v) => asNumber(v) / 100;
+  if (regime === 'pre') return n(taxaPre);
+  if (regime === 'pos') return (asNumber(percentCDI)/100) * (asNumber(cdiAnual)/100);
+  if (regime === 'ipca') return n(ipcaAnual) + n(spread);
   return 0;
 }
-function efetivaMensal(taxaAnual) {
-  return Math.pow(1 + taxaAnual, 1 / 12) - 1;
+function efetivaMensal(tAnual) {
+  return Math.pow(1 + tAnual, 1/12) - 1;
 }
 
-/* =========================
-   Cálculo principal (corrigido)
-   ========================= */
+/* ====== Mostrar/ocultar campos por regime ====== */
+function updateRegimeVisibility() {
+  const regime = document.getElementById('regime').value; // 'pre' | 'pos' | 'ipca'
+  document.querySelectorAll('.row[data-show-on]').forEach(row => {
+    const showFor = row.getAttribute('data-show-on');
+    const visible = (showFor === regime);
+    row.classList.toggle('is-hidden', !visible);
+    row.querySelectorAll('input, select, textarea').forEach(el => el.disabled = !visible);
+  });
+}
+
+/* ====== Cálculo principal ====== */
 function calcular() {
   const tipo   = document.getElementById('tipo').value;
   const regime = document.getElementById('regime').value;
 
-  const taxaPre    = document.getElementById('taxaPre')?.value || '0';
-  const percentCDI = document.getElementById('percentCDI')?.value || '0';
-  const cdiAnual   = document.getElementById('cdiAnual')?.value || '0';
-  const ipcaAnual  = document.getElementById('ipcaAnual')?.value || '0';
-  const spread     = document.getElementById('spread')?.value || '0';
+  const params = {
+    taxaPre:    document.getElementById('taxaPre')?.value || '0',
+    percentCDI: document.getElementById('percentCDI')?.value || '0',
+    cdiAnual:   document.getElementById('cdiAnual')?.value || '0',
+    ipcaAnual:  document.getElementById('ipcaAnual')?.value || '0',
+    spread:     document.getElementById('spread')?.value || '0'
+  };
 
-  const aporteInicial = parseMoney(document.getElementById('aporteInicial'));
-  const aporteMensal  = parseMoney(document.getElementById('aporteMensal'));
+  const aporteInicial = asNumber(document.getElementById('aporteInicial'));
+  const aporteMensal  = asNumber(document.getElementById('aporteMensal'));
   const prazoMeses    = Math.max(1, parseInt(document.getElementById('prazoMeses').value || '1', 10));
   const iofOpt        = document.getElementById('iof').value;
-  const dataInicio    = document.getElementById('dataInicio').value
-                      ? new Date(document.getElementById('dataInicio').value)
-                      : new Date();
 
-  const tAnual  = taxaAnualPorRegime({ regime, taxaPre, percentCDI, cdiAnual, ipcaAnual, spread });
+  const dataInicioInput = document.getElementById('dataInicio');
+  const dataInicio = dataInicioInput.value ? new Date(dataInicioInput.value) : new Date();
+
+  const tAnual  = taxaAnualPorRegime({ regime, ...params });
   const tMensal = efetivaMensal(tAnual);
 
   let saldo = aporteInicial;
   let totalInvestido = aporteInicial;
-  let rendimentoBrutoAcumulado = 0;
+  let jurosAcum = 0;
 
-  const tbody = document.querySelector('#tabela tbody');
-  tbody.innerHTML = '';
+  const TBODY = document.querySelector('#tabela tbody');
+  TBODY.innerHTML = '';
 
   for (let m = 1; m <= prazoMeses; m++) {
-    // aporte entra no início do mês
+    // aporte no início do mês
     saldo += aporteMensal;
     totalInvestido += aporteMensal;
 
@@ -72,20 +83,19 @@ function calcular() {
     let juros = saldo * tMensal;
     saldo += juros;
 
-    // IOF apenas no 1º mês (simplificado)
-    let iof = 0;
+    // IOF simplificado (só mês 1 para aproximar janela 0-30d)
     if (iofOpt === 'sim' && m === 1) {
-      iof = juros * 0.3;
-      saldo -= iof;
+      const iof = juros * 0.30;   // até ~30% no dia 1 caindo até 0 no dia 30 — aproximação
       juros -= iof;
+      saldo -= iof;
     }
 
-    rendimentoBrutoAcumulado += juros;
+    jurosAcum += juros;
 
-    // linha da tabela
+    // linha
     const dataMes = new Date(dataInicio);
     dataMes.setMonth(dataMes.getMonth() + (m - 1));
-    tbody.insertAdjacentHTML('beforeend', `
+    TBODY.insertAdjacentHTML('beforeend', `
       <tr>
         <td>${m}</td>
         <td>${dataMes.toLocaleDateString('pt-BR')}</td>
@@ -96,33 +106,42 @@ function calcular() {
     `);
   }
 
-  // IR regressivo (no final)
+  // IR no final (regressivo) — não aplica para LCI/LCA
   let imposto = 0;
   if (!isIsentoIR(tipo)) {
-    imposto = rendimentoBrutoAcumulado * aliquotaIR(prazoMeses);
+    imposto = Math.max(0, jurosAcum) * aliquotaIR(prazoMeses);
   }
 
   const saldoLiquido = saldo - imposto;
   const rendimentoBruto = saldo - totalInvestido;
-  
+
   document.getElementById('saldoLiquido').textContent    = fmtBRL.format(saldoLiquido);
   document.getElementById('totalInvestido').textContent  = fmtBRL.format(totalInvestido);
   document.getElementById('rendimentoBruto').textContent = fmtBRL.format(rendimentoBruto);
   document.getElementById('impostos').textContent        = isIsentoIR(tipo) ? 'Isento' : fmtBRL.format(imposto);
 }
 
-/* =========================
-   Formulário
-   ========================= */
+/* ====== Boot ====== */
 document.addEventListener('DOMContentLoaded', () => {
-  const form = document.getElementById('simForm');
-  if (form) {
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      calcular();
-    });
+  // data default = hoje
+  const di = document.getElementById('dataInicio');
+  if (di && !di.value) {
+    const dt = new Date();
+    di.value = dt.toISOString().slice(0,10);
   }
+
+  // regime show/hide
+  updateRegimeVisibility();
+  document.getElementById('regime').addEventListener('change', updateRegimeVisibility);
+
+  // submit
+  const form = document.getElementById('simForm');
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    calcular();
+  });
+
+  // rodapé ano
   const ano = document.getElementById('ano');
   if (ano) ano.textContent = new Date().getFullYear();
 });
-
