@@ -4,13 +4,14 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Simulador de Investimentos • Simplão Invest</title>
-
+  <meta name="description" content="Simulador gratuito de investimentos em renda fixa. Aportes mensais, IR regressivo e resultados claros.">
+  <link rel="icon" type="image/png" href="favicon.png" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header class="container header">
     <div class="brand">
-      <img src="favicon.png" alt="" style="width:24px;height:24px;margin-right:8px;opacity:.7" />
+      <img src="logo.png" alt="Simplão Invest" class="logo">
       <div>
         <h1>Simulador de Investimentos</h1>
         <p class="subtitle">Por <strong>Simplão Invest</strong> — 100% gratuito e sem anúncios.</p>
@@ -19,166 +20,114 @@
   </header>
 
   <main class="container grid">
-    <!-- Parâmetros (lado esquerdo) -->
     <section class="card">
-      <h2>Parâmetros — Investimento A</h2>
+      <h2>Parâmetros</h2>
 
-      <div class="row two">
-        <div>
-          <label for="tipoA">Tipo</label>
-          <select id="tipoA">
-            <option value="CDB">CDB</option>
+      <form id="simForm" autocomplete="off">
+        <div class="row">
+          <label for="tipo">Tipo de investimento</label>
+          <select id="tipo">
+            <option value="CDB" selected>CDB</option>
+            <option value="LCI">LCI (isento de IR)</option>
+            <option value="LCA">LCA (isento de IR)</option>
             <option value="Tesouro">Tesouro</option>
-            <option value="LCI">LCI (isento IR)</option>
-            <option value="LCA">LCA (isento IR)</option>
+            <option value="Outros">Outros</option>
           </select>
         </div>
-        <div>
-          <label for="regimeA">Rentabilidade</label>
-          <select id="regimeA" data-inputmode-target="regime">
-            <option value="pre" selected>Pré (a.a.)</option>
-            <option value="pos">Pós (% do CDI)</option>
-            <option value="ipca">IPCA + taxa</option>
+
+        <div class="row">
+          <label for="regime">Rentabilidade</label>
+          <select id="regime">
+            <option value="pre" selected>Pré-fixado (a.a.)</option>
+            <option value="pos">% do CDI</option>
+            <option value="ipca">IPCA + taxa (a.a.)</option>
           </select>
         </div>
-      </div>
 
-      <!-- Campos de taxa: só um bloco deve ficar visível conforme o regime -->
-      <div class="row" data-field="taxaPre">
-        <label for="taxaPreA">Taxa pré (a.a. %)</label>
-        <input id="taxaPreA" type="text" inputmode="numeric" value="12,00" />
-      </div>
-
-      <div class="row hidden" data-field="percentCDI">
-        <label for="percentCDIA">% do CDI</label>
-        <input id="percentCDIA" type="text" inputmode="numeric" value="105" />
-      </div>
-      <div class="row hidden" data-field="cdiAnual">
-        <label for="cdiAnualA">CDI anual (a.a. %)</label>
-        <input id="cdiAnualA" type="text" inputmode="numeric" value="10,75" />
-      </div>
-
-      <div class="row hidden" data-field="ipcaAnual">
-        <label for="ipcaAnualA">IPCA anual (a.a. %)</label>
-        <input id="ipcaAnualA" type="text" inputmode="numeric" value="4,00" />
-      </div>
-      <div class="row hidden" data-field="taxaFixa">
-        <label for="taxaFixaA">Taxa fixa (a.a. %)</label>
-        <input id="taxaFixaA" type="text" inputmode="numeric" value="6,00" />
-      </div>
-
-      <div class="row two">
-        <div>
-          <label for="aporteInicialA">Aporte inicial (R$)</label>
-          <input id="aporteInicialA" type="text" inputmode="numeric" value="0" />
-        </div>
-        <div>
-          <label for="aporteMensalA">Aporte mensal (R$)</label>
-          <input id="aporteMensalA" type="text" inputmode="numeric" value="500" />
-        </div>
-      </div>
-
-      <div class="row two">
-        <div>
-          <label for="prazoMesesA">Prazo (meses)</label>
-          <input id="prazoMesesA" type="number" value="36" min="1" />
-        </div>
-        <div>
-          <label for="iofA">Considerar IOF (0–30 dias)</label>
-          <select id="iofA">
-            <option value="nao" selected>Não (simplificado)</option>
-            <option value="sim">Sim (aproximação)</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="row">
-        <label for="dataInicioA">Data de início</label>
-        <input id="dataInicioA" type="date" />
-      </div>
-
-      <div class="row">
-        <label>
-          <input type="checkbox" id="toggleB" />
-          Comparar com Investimento B
-        </label>
-      </div>
-
-      <!-- Bloco B (opcional) -->
-      <div id="blocoB" class="hidden">
-        <h3>Investimento B (opcional)</h3>
-
-        <div class="row two">
-          <div>
-            <label for="tipoB">Tipo</label>
-            <select id="tipoB">
-              <option value="CDB">CDB</option>
-              <option value="Tesouro">Tesouro</option>
-              <option value="LCI">LCI (isento IR)</option>
-              <option value="LCA">LCA (isento IR)</option>
-            </select>
-          </div>
-          <div>
-            <label for="regimeB">Rentabilidade</label>
-            <select id="regimeB" data-inputmode-target="regime">
-              <option value="pre" selected>Pré (a.a.)</option>
-              <option value="pos">Pós (% do CDI)</option>
-              <option value="ipca">IPCA + taxa</option>
-            </select>
-          </div>
+        <!-- Pré -->
+        <div class="row" data-show-on="pre">
+          <label for="taxaPre">Taxa pré (a.a. %)</label>
+          <input id="taxaPre" type="number" step="0.01" value="12,00" inputmode="decimal">
         </div>
 
-        <div class="row" data-field="taxaPreB">
-          <label for="taxaPreB">Taxa pré (a.a. %)</label>
-          <input id="taxaPreB" type="text" inputmode="numeric" value="11,00" />
+        <!-- Pós -->
+        <div class="row" data-show-on="pos">
+          <label for="percentCDI">% do CDI</label>
+          <input id="percentCDI" type="number" step="0.01" value="105" inputmode="decimal">
+        </div>
+        <div class="row" data-show-on="pos">
+          <label for="cdiAnual">CDI anual (a.a. %)</label>
+          <input id="cdiAnual" type="number" step="0.01" value="10,75" inputmode="decimal">
         </div>
 
-        <div class="row hidden" data-field="percentCDIB">
-          <label for="percentCDIB">% do CDI</label>
-          <input id="percentCDIB" type="text" inputmode="numeric" value="105" />
+        <!-- IPCA -->
+        <div class="row" data-show-on="ipca">
+          <label for="ipcaAnual">IPCA anual (a.a. %)</label>
+          <input id="ipcaAnual" type="number" step="0.01" value="4,00" inputmode="decimal">
         </div>
-        <div class="row hidden" data-field="cdiAnualB">
-          <label for="cdiAnualB">CDI anual (a.a. %)</label>
-          <input id="cdiAnualB" type="text" inputmode="numeric" value="10,75" />
-        </div>
-
-        <div class="row hidden" data-field="ipcaAnualB">
-          <label for="ipcaAnualB">IPCA anual (a.a. %)</label>
-          <input id="ipcaAnualB" type="text" inputmode="numeric" value="4,00" />
-        </div>
-        <div class="row hidden" data-field="taxaFixaB">
-          <label for="taxaFixaB">Taxa fixa (a.a. %)</label>
-          <input id="taxaFixaB" type="text" inputmode="numeric" value="6,00" />
+        <div class="row" data-show-on="ipca">
+          <label for="spread">Taxa fixa (a.a. %)</label>
+          <input id="spread" type="number" step="0.01" value="6,00" inputmode="decimal">
         </div>
 
         <div class="row two">
           <div>
-            <label for="aporteInicialB">Aporte inicial (R$)</label>
-            <input id="aporteInicialB" type="text" inputmode="numeric" value="0" />
+            <label for="aporteInicial">Aporte inicial (R$)</label>
+            <input id="aporteInicial" type="text" value="10000">
           </div>
           <div>
-            <label for="aporteMensalB">Aporte mensal (R$)</label>
-            <input id="aporteMensalB" type="text" inputmode="numeric" value="500" />
+            <label for="aporteMensal">Aporte mensal (R$)</label>
+            <input id="aporteMensal" type="text" value="500">
           </div>
         </div>
-      </div>
 
-      <button id="calcular" class="btn">Calcular</button>
-      <p class="note">Modelo didático. Indicadores variam; títulos têm regras específicas. Use para estimar e comparar.</p>
+        <div class="row two">
+          <div>
+            <label for="prazoMeses">Prazo (meses)</label>
+            <input id="prazoMeses" type="number" step="1" min="1" value="36">
+          </div>
+          <div>
+            <label for="iof">Considerar IOF (0–30 dias)</label>
+            <select id="iof">
+              <option value="nao" selected>Não (simplificado)</option>
+              <option value="sim">Sim (aproximação)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <label for="dataInicio">Data de início</label>
+          <input id="dataInicio" type="date">
+        </div>
+
+        <button type="submit" class="btn">Calcular</button>
+        <p class="note">Modelo didático. Indicadores variam; títulos têm regras específicas. Use para estimar e comparar.</p>
+      </form>
     </section>
 
-    <!-- Resultados (lado direito) -->
     <section class="card">
-      <h2>Resultados</h2>
+      <h2>Resultado</h2>
 
       <div class="metrics">
-        <div class="metric"><div class="label">Saldo final líquido</div><div class="value" id="saldoLiquido">—</div></div>
-        <div class="metric"><div class="label">Total investido</div><div class="value" id="totalInvestido">—</div></div>
-        <div class="metric"><div class="label">Rendimento bruto</div><div class="value" id="rendimentoBruto">—</div></div>
-        <div class="metric"><div class="label">Impostos (IR)</div><div class="value" id="impostos">—</div></div>
+        <div class="metric">
+          <div class="label">Saldo final líquido</div>
+          <div class="value" id="saldoLiquido">—</div>
+        </div>
+        <div class="metric">
+          <div class="label">Total investido</div>
+          <div class="value" id="totalInvestido">—</div>
+        </div>
+        <div class="metric">
+          <div class="label">Rendimento bruto</div>
+          <div class="value" id="rendimentoBruto">—</div>
+        </div>
+        <div class="metric">
+          <div class="label">Impostos (IR)</div>
+          <div class="value" id="impostos">—</div>
+        </div>
       </div>
 
-      <div class="scroll-wrap">
+      <div class="table-wrap">
         <table id="tabela">
           <thead>
             <tr>
@@ -200,6 +149,6 @@
     <p><a href="politica-privacidade.html">Política de Privacidade</a> • <a href="termos.html">Termos de Uso</a></p>
   </footer>
 
-  <script src="script.js" defer></script>
+  <script src="script.js"></script>
 </body>
 </html>
