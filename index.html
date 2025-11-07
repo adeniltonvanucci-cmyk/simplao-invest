@@ -4,9 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Simulador de Investimentos • Simplão Invest</title>
-  <meta name="description" content="Simulador gratuito de investimentos em renda fixa (CDB, LCI, LCA, Tesouro). Aportes mensais, IR regressivo e resultados claros. Sem anúncios.">
+  <meta name="description" content="Simulador gratuito de investimentos em renda fixa (CDB, LCI, LCA, Tesouro). Aportes mensais, IR regressivo e resultados claros.">
   <link rel="icon" type="image/png" href="favicon.png">
-  <!-- CSS -->
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -19,10 +18,6 @@
       </div>
     </div>
   </header>
-
-  <div class="banner-free">
-    <strong>Gratuito • Sem anúncios • Sem cookies de rastreio</strong>
-  </div>
 
   <main class="container grid">
     <!-- COLUNA ESQUERDA: FORMULÁRIO -->
@@ -51,28 +46,31 @@
           </div>
         </div>
 
-        <!-- Campos dinâmicos controlados pelo JS -->
-        <div class="row" data-field="taxaPre">
+        <!-- CAMPOS DINÂMICOS (mostra/oculta pelo data-show-on) -->
+        <!-- Pré -->
+        <div class="row" data-show-on="pre">
           <label for="taxaPre">Taxa pré (a.a. %)</label>
           <input id="taxaPre" type="text" inputmode="decimal" value="12,00">
         </div>
 
-        <div class="row hidden" data-field="percentCDI">
+        <!-- Pós (CDI) -->
+        <div class="row" data-show-on="pos" style="display:none">
           <label for="percentCDI">% do CDI</label>
           <input id="percentCDI" type="text" inputmode="decimal" value="105">
         </div>
 
-        <div class="row hidden" data-field="cdiAnual">
+        <div class="row" data-show-on="pos" style="display:none">
           <label for="cdiAnual">CDI anual (a.a. %)</label>
           <input id="cdiAnual" type="text" inputmode="decimal" value="10,75">
         </div>
 
-        <div class="row hidden" data-field="ipcaAnual">
+        <!-- IPCA+ -->
+        <div class="row" data-show-on="ipca" style="display:none">
           <label for="ipcaAnual">IPCA anual (a.a. %)</label>
           <input id="ipcaAnual" type="text" inputmode="decimal" value="4,00">
         </div>
 
-        <div class="row hidden" data-field="spread">
+        <div class="row" data-show-on="ipca" style="display:none">
           <label for="spread">Taxa fixa (a.a. %)</label>
           <input id="spread" type="text" inputmode="decimal" value="6,00">
         </div>
@@ -104,7 +102,7 @@
 
         <div class="row">
           <label for="dataInicio">Data de início</label>
-          <input id="dataInicio" type="date">
+          <input id="dataInicio" type="date" placeholder="dd/mm/aaaa">
         </div>
 
         <button type="submit" class="btn">Calcular</button>
@@ -157,7 +155,6 @@
     <p><a href="politica-privacidade.html">Política de Privacidade</a> • <a href="termos.html">Termos de Uso</a></p>
   </footer>
 
-  <!-- JS -->
   <script src="script.js" defer></script>
 </body>
 </html>
