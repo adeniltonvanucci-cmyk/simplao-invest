@@ -88,3 +88,8 @@ thead,tbody tr{display:table;width:100%;table-layout:fixed}
 @media (max-width:980px){
   .metrics{grid-template-columns:1fr 1fr}
 }
+/* Oculta elementos dinamicamente via JavaScript */
+.hidden {
+  display: none !important;
+}
+
