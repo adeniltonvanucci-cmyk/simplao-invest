@@ -108,20 +108,27 @@ function attachPercentMask(inputEl) {
    IPCA automático (dados oficiais IBGE)
    ========================================================= */
 
-const IPCA_API_URL = "https://apisidra.ibge.gov.br/values/t/7060/n1/all/v/2334/p/last%201";
-const IPCA_FALLBACK = 4.50; // valor padrão (% a.a.)
+const IPCA_API_URL = "https://apisidra.ibge.gov.br/values/t/7060/n1/all/v/63/p/last%201";
 
-async function setIPCAFromIBGE() {
+async function getIPCA12Meses() {
   try {
-    const res = await fetch(IPCA_API_URL, { cache: "no-store" });
+    const res = await fetch(IPCA_API_URL);
     const data = await res.json();
 
-    // O IBGE retorna um array; o último item tem o valor em "V"
-    const ipcaValor = parseFloat(data[data.length - 1].V.replace(",", "."));
-    if (!isNaN(ipcaValor) && ipcaAnual) {
-      ipcaAnual.value = String(ipcaValor).replace(".", ",");
-      console.log(`✅ IPCA atualizado automaticamente: ${ipcaValor.toFixed(2)}%`);
+    // Filtra apenas o item com "IPCA - Variação acumulada em 12 meses"
+    const acumulado = data.find(item => item.D2N?.includes("acumulada em 12 meses"));
+    const ipcaValor = parseFloat(acumulado?.V.replace(",", "."));
+
+    if (!isNaN(ipcaValor)) {
+      console.log(`✅ IPCA acumulado em 12 meses: ${ipcaValor.toFixed(2)}%`);
+    } else {
+      console.warn("⚠️ IPCA acumulado não encontrado.");
     }
+  } catch (e) {
+    console.error("Erro ao buscar IPCA acumulado:", e);
+  }
+}
+
   } catch (e) {
     console.warn("⚠️ Falha ao buscar IPCA do IBGE. Usando fallback.");
     if (ipcaAnual && !ipcaAnual.value)
