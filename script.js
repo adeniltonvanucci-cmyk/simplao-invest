@@ -1,31 +1,33 @@
 /* =========================================================
    SIMPLÃO INVEST – Simulador (versão completa)
    - IPCA 12m automático via IBGE (SIDRA)
-   - CDI automático (valor simulado, pronto p/ API futura)
-   - Juros compostos mensais • IR regressivo (~30*d) • IOF simplificado
+   - CDI automático (valor simulado / pronto p/ API futura)
+   - Juros compostos mensais
+   - IR regressivo (~30*d)
+   - IOF simplificado (opcional)
    ========================================================= */
 
 /* ===========================
-   Seletores
+   Seletores de elementos
    =========================== */
 const tipo           = document.querySelector('#tipo');
 const regime         = document.querySelector('#regime');
 
-// Taxas por regime
-const taxaPre        = document.querySelector('#taxaPre');    // % a.a. (Pré)
-const percentCDI     = document.querySelector('#percentCDI'); // % do CDI (Pós)
-const cdiAnual       = document.querySelector('#cdiAnual');   // CDI a.a. %
-const ipcaAnual      = document.querySelector('#ipcaAnual');  // IPCA a.a. %
-const spread         = document.querySelector('#spread');     // taxa fixa a.a. % (IPCA+)
+// Taxas
+const taxaPre        = document.querySelector('#taxaPre');
+const percentCDI     = document.querySelector('#percentCDI');
+const cdiAnual       = document.querySelector('#cdiAnual');
+const ipcaAnual      = document.querySelector('#ipcaAnual');
+const spread         = document.querySelector('#spread');
 
 // Parâmetros gerais
-const aporteInicial  = document.querySelector('#aporteInicial'); // R$
-const aporteMensal   = document.querySelector('#aporteMensal');  // R$
-const prazoMeses     = document.querySelector('#prazoMeses');    // meses
-const iofSelect      = document.querySelector('#iof');           // "sim" | "nao"
-const dataInicio     = document.querySelector('#dataInicio');    // date
+const aporteInicial  = document.querySelector('#aporteInicial');
+const aporteMensal   = document.querySelector('#aporteMensal');
+const prazoMeses     = document.querySelector('#prazoMeses');
+const iofSelect      = document.querySelector('#iof');
+const dataInicio     = document.querySelector('#dataInicio');
 
-// Saídas (cards)
+// Saídas
 const saldoLiquidoEl     = document.querySelector('#saldoLiquido');
 const totalInvestidoEl   = document.querySelector('#totalInvestido');
 const rendimentoBrutoEl  = document.querySelector('#rendimentoBruto');
@@ -65,13 +67,12 @@ function attachBRLMask(inputEl){
   });
 }
 
-/** Máscara genérica de percentual "12,34" (para taxa pré, IPCA e spread) */
 function attachPercentMask(inputEl){
   if(!inputEl) return;
   inputEl.addEventListener('input',()=>{
     let d=inputEl.value.replace(/\D/g,'');
     if(!d){ inputEl.value=''; return; }
-    d=d.substring(0,5); // até 999,99
+    d=d.substring(0,5);
     const val=(parseInt(d,10)/100).toFixed(2);
     inputEl.value=String(val).replace('.',',');
   });
@@ -81,41 +82,14 @@ function attachPercentMask(inputEl){
   });
 }
 
-/** Máscara inteligente para % do CDI: 00 (se <100) ou 000 (se >=100) */
-function attachCDIMask(inputEl){
-  if(!inputEl) return;
-
-  inputEl.addEventListener('input',()=>{
-    let d = inputEl.value.replace(/\D/g,''); // só dígitos
-    if(!d){ inputEl.value=''; return; }
-    d = d.substring(0,3); // limita a 3 dígitos
-
-    if (parseInt(d,10) < 100) {
-      inputEl.value = d.padStart(2,'0'); // 00..99
-    } else {
-      inputEl.value = d.padStart(3,'0'); // 100..999
-    }
-  });
-
-  inputEl.addEventListener('blur',()=>{
-    let d = inputEl.value.replace(/\D/g,'');
-    if(!d){ inputEl.value=''; return; }
-    if (parseInt(d,10) < 100) {
-      inputEl.value = d.padStart(2,'0');
-    } else {
-      inputEl.value = d.padStart(3,'0');
-    }
-  });
-}
-
 /* =========================================================
    IPCA automático – IBGE (SIDRA)
    - Tabela: 1737
-   - Variável: 2266 (índice, média 2012=100)
-   - Estratégia: últimos 13 índices → acumulado 12m = (atual/12mAtras - 1)*100
+   - Variável: 2266 (Índice – média 2012=100)
+   - Estratégia: últimos 13 índices → acumulado 12m
    ========================================================= */
 const IPCA_URL      = "https://apisidra.ibge.gov.br/values/t/1737/n1/all/v/2266/p/last%2013";
-const IPCA_FALLBACK = 4.50; // % a.a.
+const IPCA_FALLBACK = 4.50;
 
 async function setIPCAFromIBGE(){
   try{
@@ -123,11 +97,11 @@ async function setIPCAFromIBGE(){
     const data = await res.json();
 
     const valores = data.slice(1).map(d => ({
-      mes: d.D3N,                                         // "Outubro 2025"
-      indice: parseFloat(String(d.V).replace(',', '.'))   // índice (2012=100)
+      mes: d.D3N,
+      indice: parseFloat(String(d.V).replace(',', '.'))
     })).filter(v => !isNaN(v.indice));
 
-    if (valores.length < 2) throw new Error('Retorno insuficiente do SIDRA.');
+    if (valores.length < 2) throw new Error('Retorno insuficiente.');
 
     const atual = valores[valores.length - 1].indice;
     const dozeMesesAtras = valores[0].indice;
@@ -147,12 +121,11 @@ async function setIPCAFromIBGE(){
 }
 
 /* =========================================================
-   CDI automático (simulado por enquanto)
-   - Troque "obterCDIComoJSON" por fetch do seu Worker/API quando quiser
+   CDI automático (simulado)
    ========================================================= */
 async function obterCDIComoJSON() {
-  // Exemplo: CDI 12m (out/2025). Ajuste quando tiver API.
-  const cdiAcumulado = 13.70;
+  // valor fixo enquanto não integra API oficial
+  const cdiAcumulado = 13.70; // CDI 12m (out/2025)
   const periodo      = "outubro 2025";
   const fonte        = "BrasilIndicadores.com.br / B3";
 
@@ -171,7 +144,7 @@ async function setCDIAutomatico(){
     );
     console.log(`✅ CDI atualizado: ${cdi.cdiAcumulado}%`);
   }catch(e){
-    console.warn("⚠️ Falha ao obter CDI automático. Informe manualmente se desejar.", e?.message||e);
+    console.warn("⚠️ Falha ao obter CDI automático.", e?.message||e);
   }
 }
 
@@ -207,13 +180,11 @@ function obterTaxaAnual(regimeVal){
     return parsePercent(taxaPre.value);
   }
   if (regimeVal==='pos'){
-    // CDI efetivo = (CDI a.a. %) * (% do CDI) / 100
     const cdi = parsePercent(cdiAnual.value);
     const pcdi= parsePercent(percentCDI.value);
     return (cdi * pcdi)/100;
   }
   if (regimeVal==='ipca'){
-    // composição correta: (1+IPCA)*(1+fixo)-1
     const ipca = parsePercent(ipcaAnual.value)/100;
     const fixo = parsePercent(spread.value)/100;
     const efetiva = (1+ipca)*(1+fixo)-1;
@@ -224,7 +195,7 @@ function obterTaxaAnual(regimeVal){
 
 function aplicarIOFSimplificado(jurosMes, mesIndex, iofFlag){
   if (iofFlag!=='sim') return jurosMes;
-  if (mesIndex===0) return jurosMes*0.5; // simplificado didático
+  if (mesIndex===0) return jurosMes*0.5;
   return jurosMes;
 }
 
@@ -243,25 +214,18 @@ function calcular(){
     if(yyyy && mm && dd) dataBase = new Date(Date.UTC(yyyy,mm-1,dd));
   }
 
-  const taxaAA   = obterTaxaAnual(regimeVal);      // % a.a.
+  const taxaAA   = obterTaxaAnual(regimeVal);
   const taxaMensal = annualPercentToMonthlyRate(taxaAA);
 
   let saldo = 0, totalAportes = 0, jurosBrutos = 0;
   saldo += aporte0; totalAportes += aporte0;
-
   if (tbody) tbody.innerHTML = '';
 
   for (let m=0; m<meses; m++){
-    const d = new Date(Date.UTC(
-      dataBase.getUTCFullYear(),
-      dataBase.getUTCMonth()+m+1,
-      dataBase.getUTCDate()
-    ));
+    const d = new Date(Date.UTC(dataBase.getUTCFullYear(), dataBase.getUTCMonth()+m+1, dataBase.getUTCDate()));
 
-    // aporte no início de cada mês (m>0); o inicial já entrou no m=0
     if (m>0 && aporteMes>0){ saldo += aporteMes; totalAportes += aporteMes; }
 
-    // juros do mês
     let j = saldo * taxaMensal;
     j = aplicarIOFSimplificado(j, m, usarIOF);
     saldo += j; jurosBrutos += j;
@@ -277,7 +241,6 @@ function calcular(){
     }
   }
 
-  // IR regressivo por dias (~30*d)
   const diasTotais = meses*30;
   const ir = isIsentoIR(tipoVal) ? 0 : jurosBrutos * aliquotaIRPorDias(diasTotais);
   const saldoFinalLiquido = saldo - ir;
@@ -294,11 +257,9 @@ function calcular(){
 function init(){
   updateRegimeUI();
 
-  // Automáticos
-  setIPCAFromIBGE();                // IPCA 12m ao abrir
-  if (regime?.value === 'pos') {
-    setCDIAutomatico();             // CDI se já iniciar em pós
-  }
+  // IPCA e CDI automáticos
+  setIPCAFromIBGE();
+  if (regime?.value === 'pos') setCDIAutomatico();
 
   regime?.addEventListener('change', () => {
     updateRegimeUI();
@@ -310,16 +271,16 @@ function init(){
   attachBRLMask(aporteInicial);
   attachBRLMask(aporteMensal);
   attachPercentMask(taxaPre);
-  attachCDIMask(percentCDI);   // << máscara específica (00 / 000)
+  attachPercentMask(percentCDI);
   attachPercentMask(cdiAnual);
   attachPercentMask(ipcaAnual);
   attachPercentMask(spread);
 
-  // Submit
+  // Formulário
   const form = document.querySelector('#simForm');
   form?.addEventListener('submit',(e)=>{ e.preventDefault(); calcular(); });
 
-  // Rodapé
+  // Ano rodapé
   const anoEl = document.querySelector('#ano');
   if (anoEl) anoEl.textContent = String(new Date().getFullYear());
 }
