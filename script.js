@@ -1,298 +1,169 @@
-/* =========================================================
-   SIMPLÃO INVEST – Simulador (JS completo)
-   ========================================================= */
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Simulador de Investimentos • Simplão Invest</title>
+  <meta name="description" content="Simulador gratuito de investimentos em renda fixa (CDB, LCI, LCA, Tesouro). Aportes mensais, IR regressivo e resultados claros.">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="container header">
+    <div class="brand">
+      <img class="logo" src="logo.png" alt="Simplão Invest">
+      <div>
+        <h1>Simulador de Investimentos</h1>
+        <p class="subtitle">Por <strong>Simplão Invest</strong> — 100% gratuito.</p>
+      </div>
+    </div>
+  </header>
 
-/* ===========================
-   Seletores de elementos
-   =========================== */
+  <main class="container grid">
+    <!-- COLUNA ESQUERDA: FORMULÁRIO -->
+    <section class="card">
+      <h2>Parâmetros</h2>
 
-const tipo           = document.querySelector('#tipo');             // CDB, LCI, LCA, Tesouro, etc.
-const regime         = document.querySelector('#regime');           // pre | pos | ipca
+      <form id="simForm" autocomplete="off" novalidate>
+        <div class="row two">
+          <div>
+            <label for="tipo">Tipo de investimento</label>
+            <select id="tipo">
+              <option value="CDB" selected>CDB</option>
+              <option value="LCI">LCI (isento IR)</option>
+              <option value="LCA">LCA (isento IR)</option>
+              <option value="Tesouro">Tesouro</option>
+            </select>
+          </div>
 
-// Campos de taxa / parâmetros do regime
-const taxaPre        = document.querySelector('#taxaPre');          // % a.a. (Pré)
-const percentCDI     = document.querySelector('#percentCDI');       // % sobre CDI (Pós)
-const cdiAnual       = document.querySelector('#cdiAnual');         // % a.a. do CDI (Pós)
-const ipcaAnual      = document.querySelector('#ipcaAnual');        // % a.a. do IPCA (IPCA+)
-const spread         = document.querySelector('#spread');           // % a.a. fixo (IPCA+)
+          <div>
+            <label for="regime">Rentabilidade</label>
+            <select id="regime">
+              <option value="pre" selected>Pré-fixado (a.a.)</option>
+              <option value="pos">% do CDI (pós-fixado)</option>
+              <option value="ipca">IPCA + taxa (a.a.)</option>
+            </select>
+          </div>
+        </div>
 
-const aporteInicial  = document.querySelector('#aporteInicial');    // R$
-const aporteMensal   = document.querySelector('#aporteMensal');     // R$
-const prazoMeses     = document.querySelector('#prazoMeses');       // meses (número)
-const iofSelect      = document.querySelector('#iof');              // "sim" | "nao"
-const dataInicio     = document.querySelector('#dataInicio');       // date
+        <!-- CAMPOS DINÂMICOS (mostra/oculta pelo data-show-on) -->
+        <!-- Pré -->
+        <div class="row" data-show-on="pre">
+          <label for="taxaPre">Taxa pré (a.a. %)</label>
+          <input id="taxaPre" type="text" inputmode="decimal" value="0,00">
+        </div>
 
-// Resultados (cards)
-const saldoLiquidoEl     = document.querySelector('#saldoLiquido');
-const totalInvestidoEl   = document.querySelector('#totalInvestido');
-const rendimentoBrutoEl  = document.querySelector('#rendimentoBruto');
-const impostosEl         = document.querySelector('#impostos');     // IR estimado
+        <!-- Pós (CDI) -->
+        <div class="row" data-show-on="pos" style="display:none">
+          <label for="percentCDI">% do CDI (ex: 105)</label>
+          <input id="percentCDI" type="text" inputmode="decimal" value="0,00">
+        </div>
 
-// Tabela
-const tbody          = document.querySelector('#tabela tbody');
+        <div class="row" data-show-on="pos" style="display:none">
+          <label for="cdiAnual">CDI anual (a.a. %)</label>
+          <input id="cdiAnual" type="text" inputmode="decimal" value="13,71">
+        </div>
 
-// Form
-const form           = document.querySelector('#simForm');
+        <!-- IPCA+ -->
+        <div class="row" data-show-on="ipca" style="display:none">
+          <label for="ipcaAnual">IPCA anual (a.a. %)</label>
+          <input id="ipcaAnual" type="text" inputmode="decimal" value="0,00">
+        </div>
 
-// Outras utilidades
-const fmtBRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
-const fmtDate = (d) => new Intl.DateTimeFormat('pt-BR', { timeZone: 'UTC' }).format(d);
+        <div class="row" data-show-on="ipca" style="display:none">
+          <label for="spread">Taxa fixa (a.a. %)</label>
+          <input id="spread" type="text" inputmode="decimal" value="0,00">
+        </div>
 
-/* =========================================================
-   Máscaras de entrada (Moeda e Percentual)
-   ========================================================= */
+        <div class="row two">
+          <div>
+            <label for="aporteInicial">Aporte inicial (R$)</label>
+            <input id="aporteInicial" type="text" inputmode="numeric" value="0,00">
+          </div>
+          <div>
+            <label for="aporteMensal">Aporte mensal (R$)</label>
+            <input id="aporteMensal" type="text" inputmode="numeric" value="0,00">
+          </div>
+        </div>
 
-/** Converte string BR ("R$ 1.234,56") para Number 1234.56 */
-function parseBRNumber(str) {
-  if (str == null) return 0;
-  const s = String(str)
-    .replace(/[^\d,.-]/g, '')   // mantém dígitos, vírgula, ponto e sinal
-    .replace(/\./g, '')         // remove separador de milhar
-    .replace(',', '.');         // vírgula -> ponto
-  const v = parseFloat(s);
-  return isNaN(v) ? 0 : v;
-}
+        <div class="row two">
+          <div>
+            <label for="prazoMeses">Prazo (meses)</label>
+            <input id="prazoMeses" type="number" min="1" value="0,00">
+          </div>
+          <div>
+            <label for="iof">Considerar IOF (0–30 dias)</label>
+            <select id="iof">
+              <option value="nao" selected>Não (simplificado)</option>
+              <option value="sim">Sim (aproximação)</option>
+            </select>
+          </div>
+        </div>
 
-/** Converte string de percentual BR ("12,5") em Number 12.5 */
-function parsePercent(str) {
-  return parseBRNumber(str);
-}
+        <div class="row">
+          <label for="dataInicio">Data de início</label>
+          <input id="dataInicio" type="date" placeholder="dd/mm/aaaa">
+        </div>
 
-/** Máscara BRL: digite só números → formata "R$ 0,00" em tempo real */
-function attachBRLMask(inputEl) {
-  if (!inputEl) return;
+        <button type="submit" class="btn">Calcular</button>
+        <p class="note">CDI de referência: <strong>13,71% a.a.</strong> (atualizado em 07/11/2025)<br>
+  Modelo didático. Indicadores variam; títulos têm regras específicas. Use para estimar e comparar.</p>
+      </form>
+    </section>
 
-  inputEl.addEventListener('input', () => {
-    let digits = inputEl.value.replace(/\D/g, '');
-    if (!digits) {
-      inputEl.value = '';
-      return;
-    }
-    digits = digits.substring(0, 12);
-    const val = (parseInt(digits, 10) / 100).toFixed(2);
-    inputEl.value = fmtBRL.format(val);
-  });
+    <!-- COLUNA DIREITA: RESULTADOS -->
+    <section class="card">
+      <h2>Resultado</h2>
 
-  inputEl.addEventListener('focus', () => {
-    if (!inputEl.value) inputEl.value = 'R$ 0,00';
-  });
+      <div class="metrics">
+        <div class="metric">
+          <div class="label">Saldo final líquido</div>
+          <div class="value" id="saldoLiquido">—</div>
+        </div>
+        <div class="metric">
+          <div class="label">Total investido</div>
+          <div class="value" id="totalInvestido">—</div>
+        </div>
+        <div class="metric">
+          <div class="label">Rendimento bruto</div>
+          <div class="value" id="rendimentoBruto">—</div>
+        </div>
+        <div class="metric">
+          <div class="label">Impostos (IR)</div>
+          <div class="value" id="impostos">—</div>
+        </div>
+      </div>
 
-  inputEl.addEventListener('blur', () => {
-    const v = parseBRNumber(inputEl.value);
-    inputEl.value = v === 0 ? '' : fmtBRL.format(v);
-  });
-}
+      <div class="table-wrap">
+        <table id="tabela">
+          <thead>
+            <tr>
+              <th>Mês</th>
+              <th>Data</th>
+              <th>Saldo (R$)</th>
+              <th>Aporte (R$)</th>
+              <th>Juros (R$)</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
 
-/** Máscara Percentual: digite só números → formata "12,50" em tempo real */
-function attachPercentMask(inputEl) {
-  if (!inputEl) return;
+  <footer class="container footer">
+    <p>© <span id="ano"></span> Simplão Invest • Ferramentas gratuitas para decisões financeiras melhores.</p>
+    <p><a href="politica-privacidade.html">Política de Privacidade</a> • <a href="termos.html">Termos de Uso</a></p>
+  </footer>
 
-  inputEl.addEventListener('input', () => {
-    let digits = inputEl.value.replace(/\D/g, '');
-    if (!digits) {
-      inputEl.value = '';
-      return;
-    }
-    digits = digits.substring(0, 5);
-    const val = (parseInt(digits, 10) / 100).toFixed(2);
-    inputEl.value = String(val).replace('.', ',');
-  });
+  <script src="script.js" defer></script>
+<!-- Cloudflare Web Analytics -->
+  <script 
+    defer 
+    src="https://static.cloudflareinsights.com/beacon.min.js" 
+    data-cf-beacon='{"token": "321f3ac3df2e4308a7217d667a9be7fe"}'>
+  </script>
+  <!-- End Cloudflare Web Analytics -->
+</body>
+</html>
 
-  inputEl.addEventListener('blur', () => {
-    const v = parsePercent(inputEl.value);
-    inputEl.value = v === 0 ? '' : String(v.toFixed(2)).replace('.', ',');
-  });
-}
-
-/* =========================================================
-   IPCA automático (dados oficiais IBGE)
-   ========================================================= */
-
-const IPCA_API_URL = "https://apisidra.ibge.gov.br/values/t/1737/n1/all/v/2266/p/last%201";
-const IPCA_FALLBACK = 4.50; // valor padrão (% a.a.)
-
-async function setIPCAFromIBGE() {
-  try {
-    const res = await fetch(IPCA_API_URL, { cache: "no-store" });
-    const data = await res.json();
-
-    // O IBGE retorna um array; o último item tem o valor em "V"
-    const ipcaValor = parseFloat(data[data.length - 1].V.replace(",", "."));
-    if (!isNaN(ipcaValor) && ipcaAnual) {
-      ipcaAnual.value = String(ipcaValor).replace(".", ",");
-      console.log(`✅ IPCA atualizado automaticamente: ${ipcaValor.toFixed(2)}%`);
-    }
-  } catch (e) {
-    console.warn("⚠️ Falha ao buscar IPCA do IBGE. Usando fallback.");
-    if (ipcaAnual && !ipcaAnual.value)
-      ipcaAnual.value = String(IPCA_FALLBACK).replace(".", ",");
-  }
-}
-
-/* =========================================================
-   Lógica do simulador
-   ========================================================= */
-
-/** Mostra/oculta campos conforme o regime selecionado */
-function updateRegimeUI() {
-  const regimeVal = regime?.value || 'pre';
-  const rows = document.querySelectorAll('[data-show-on]');
-  rows.forEach(el => {
-    const when = el.getAttribute('data-show-on');
-    el.style.display = (when === regimeVal) ? '' : 'none';
-  });
-}
-
-/** Converte taxa anual (%) em taxa mensal decimal */
-function annualPercentToMonthlyRate(annualPercent) {
-  const a = (annualPercent || 0) / 100;
-  return Math.pow(1 + a, 1 / 12) - 1;
-}
-
-/** Calcula alíquota de IR conforme prazo total (dias) – tabela regressiva */
-function aliquotaIR(dias) {
-  if (dias <= 180) return 0.225;
-  if (dias <= 360) return 0.20;
-  if (dias <= 720) return 0.175;
-  return 0.15;
-}
-
-/** Define taxa efetiva anual conforme regime */
-function obterTaxaAnual(regimeVal) {
-  if (regimeVal === 'pre') {
-    return parsePercent(taxaPre.value);
-  }
-  if (regimeVal === 'pos') {
-    const cdi = parsePercent(cdiAnual.value);
-    const pcdi = parsePercent(percentCDI.value);
-    return (cdi * pcdi) / 100;
-  }
-  if (regimeVal === 'ipca') {
-    const ipca = parsePercent(ipcaAnual.value) / 100;
-    const fixo = parsePercent(spread.value) / 100;
-    const taxaEfetiva = (1 + ipca) * (1 + fixo) - 1;
-    return taxaEfetiva * 100; // composto
-  }
-  return 0;
-}
-
-/** LCI/LCA são isentos de IR */
-function isIsentoIR(tipoVal) {
-  const t = (tipoVal || '').toUpperCase();
-  return (t.includes('LCI') || t.includes('LCA'));
-}
-
-/** IOF simplificado (opcional) */
-function aplicarIOFSimplificado(jurosMes, mesIndex, iofFlag) {
-  if (iofFlag !== 'sim') return jurosMes;
-  if (mesIndex === 0) return jurosMes * 0.5;
-  return jurosMes;
-}
-
-/** Executa a simulação */
-function calcular() {
-  const tipoVal   = tipo?.value || 'CDB';
-  const regimeVal = regime?.value || 'pre';
-  const aporte0   = parseBRNumber(aporteInicial.value);
-  const aporteMes = parseBRNumber(aporteMensal.value);
-  const meses     = parseInt(prazoMeses.value, 10) || 0;
-  const usarIOF   = (iofSelect?.value || 'nao');
-
-  let dataBase = new Date();
-  if (dataInicio && dataInicio.value) {
-    const [yyyy, mm, dd] = dataInicio.value.split('-').map(Number);
-    if (yyyy && mm && dd) dataBase = new Date(Date.UTC(yyyy, mm - 1, dd));
-  }
-
-  const taxaAnualPercent = obterTaxaAnual(regimeVal);
-  const taxaMensal = annualPercentToMonthlyRate(taxaAnualPercent);
-
-  let saldo = 0, totalAportes = 0, totalJurosBrutos = 0;
-
-  saldo += aporte0;
-  totalAportes += aporte0;
-
-  if (tbody) tbody.innerHTML = '';
-
-  for (let m = 0; m < meses; m++) {
-    const d = new Date(Date.UTC(
-      dataBase.getUTCFullYear(),
-      dataBase.getUTCMonth() + m + 1,
-      dataBase.getUTCDate()
-    ));
-
-    if (aporteMes > 0) {
-      saldo += aporteMes;
-      totalAportes += aporteMes;
-    }
-
-    let jurosMes = saldo * taxaMensal;
-    jurosMes = aplicarIOFSimplificado(jurosMes, m, usarIOF);
-
-    saldo += jurosMes;
-    totalJurosBrutos += jurosMes;
-
-    if (tbody) {
-      const tr = document.createElement('tr');
-      const tdMes   = document.createElement('td'); tdMes.textContent = (m + 1).toString();
-      const tdData  = document.createElement('td'); tdData.textContent = fmtDate(d);
-      const tdSaldo = document.createElement('td'); tdSaldo.textContent = fmtBRL.format(saldo);
-      const tdAp    = document.createElement('td'); tdAp.textContent   = fmtBRL.format(aporteMes);
-      const tdJ     = document.createElement('td'); tdJ.textContent    = fmtBRL.format(jurosMes);
-      tr.append(tdMes, tdData, tdSaldo, tdAp, tdJ);
-      tbody.appendChild(tr);
-    }
-  }
-
-  const diasTotais = meses * 30;
-  const bruto = totalJurosBrutos;
-  const liquidoIR = isIsentoIR(tipoVal) ? 0 : bruto * aliquotaIR(diasTotais);
-
-  const saldoFinalLiquido = saldo - liquidoIR;
-  const totalInvestido    = totalAportes;
-  const rendimentoBruto   = saldo - totalAportes;
-  const impostos          = liquidoIR;
-
-  if (saldoLiquidoEl)    saldoLiquidoEl.textContent   = fmtBRL.format(saldoFinalLiquido);
-  if (totalInvestidoEl)  totalInvestidoEl.textContent = fmtBRL.format(totalInvestido);
-  if (rendimentoBrutoEl) rendimentoBrutoEl.textContent= fmtBRL.format(rendimentoBruto);
-  if (impostosEl)        impostosEl.textContent       = fmtBRL.format(impostos);
-}
-
-/* =========================================================
-   Inicialização
-   ========================================================= */
-
-function init() {
-  updateRegimeUI();
-
-  // Atualiza IPCA automaticamente ao carregar
-  setIPCAFromIBGE();
-
-  // Recarrega IPCA ao trocar regime para IPCA+
-  regime?.addEventListener('change', () => {
-    updateRegimeUI();
-    if (regime.value === 'ipca') setIPCAFromIBGE();
-  });
-
-  attachBRLMask(aporteInicial);
-  attachBRLMask(aporteMensal);
-  attachPercentMask(taxaPre);
-  attachPercentMask(percentCDI);
-  attachPercentMask(cdiAnual);
-  attachPercentMask(ipcaAnual);
-  attachPercentMask(spread);
-
-  form?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    calcular();
-  });
-
-  calcular();
-
-  const anoEl = document.querySelector('#ano');
-  if (anoEl) anoEl.textContent = String(new Date().getFullYear());
-}
-
-// DOM pronto
-document.addEventListener('DOMContentLoaded', init);
