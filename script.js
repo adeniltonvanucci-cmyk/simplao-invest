@@ -1,4 +1,4 @@
-* =========================================================
+/* =========================================================
    SIMPLÃO INVEST – Simulador (JS completo)
    ========================================================= */
 
@@ -68,7 +68,6 @@ function attachBRLMask(inputEl) {
       inputEl.value = '';
       return;
     }
-    // limita 12 dígitos (≈ R$ 9.999.999.999,99)
     digits = digits.substring(0, 12);
     const val = (parseInt(digits, 10) / 100).toFixed(2);
     inputEl.value = fmtBRL.format(val);
@@ -94,10 +93,8 @@ function attachPercentMask(inputEl) {
       inputEl.value = '';
       return;
     }
-    // até 5 dígitos (99999 → 999,99)
     digits = digits.substring(0, 5);
     const val = (parseInt(digits, 10) / 100).toFixed(2);
-    // converte ponto para vírgula na exibição
     inputEl.value = String(val).replace('.', ',');
   });
 
@@ -108,10 +105,35 @@ function attachPercentMask(inputEl) {
 }
 
 /* =========================================================
+   IPCA automático (dados oficiais IBGE)
+   ========================================================= */
+
+const IPCA_API_URL = "https://apisidra.ibge.gov.br/values/t/1737/n1/all/v/63/p/last%201";
+const IPCA_FALLBACK = 4.50; // valor padrão (% a.a.)
+
+async function setIPCAFromIBGE() {
+  try {
+    const res = await fetch(IPCA_API_URL, { cache: "no-store" });
+    const data = await res.json();
+
+    // O IBGE retorna um array; o último item tem o valor em "V"
+    const ipcaValor = parseFloat(data[data.length - 1].V.replace(",", "."));
+    if (!isNaN(ipcaValor) && ipcaAnual) {
+      ipcaAnual.value = String(ipcaValor).replace(".", ",");
+      console.log(`✅ IPCA atualizado automaticamente: ${ipcaValor.toFixed(2)}%`);
+    }
+  } catch (e) {
+    console.warn("⚠️ Falha ao buscar IPCA do IBGE. Usando fallback.");
+    if (ipcaAnual && !ipcaAnual.value)
+      ipcaAnual.value = String(IPCA_FALLBACK).replace(".", ",");
+  }
+}
+
+/* =========================================================
    Lógica do simulador
    ========================================================= */
 
-/** Mostra/oculta campos conforme o regime selecionado (usa atributo data-show-on="...") */
+/** Mostra/oculta campos conforme o regime selecionado */
 function updateRegimeUI() {
   const regimeVal = regime?.value || 'pre';
   const rows = document.querySelectorAll('[data-show-on]');
@@ -138,17 +160,18 @@ function aliquotaIR(dias) {
 /** Define taxa efetiva anual conforme regime */
 function obterTaxaAnual(regimeVal) {
   if (regimeVal === 'pre') {
-    return parsePercent(taxaPre.value); // % a.a.
+    return parsePercent(taxaPre.value);
   }
   if (regimeVal === 'pos') {
-    const cdi = parsePercent(cdiAnual.value);      // % a.a.
-    const pcdi = parsePercent(percentCDI.value);   // %
-    return (cdi * pcdi) / 100;                     // % a.a.
+    const cdi = parsePercent(cdiAnual.value);
+    const pcdi = parsePercent(percentCDI.value);
+    return (cdi * pcdi) / 100;
   }
   if (regimeVal === 'ipca') {
-    const ipca = parsePercent(ipcaAnual.value);    // % a.a.
-    const fixo = parsePercent(spread.value);       // % a.a.
-    return ipca + fixo;                            // % a.a.
+    const ipca = parsePercent(ipcaAnual.value) / 100;
+    const fixo = parsePercent(spread.value) / 100;
+    const taxaEfetiva = (1 + ipca) * (1 + fixo) - 1;
+    return taxaEfetiva * 100; // composto
   }
   return 0;
 }
@@ -159,97 +182,77 @@ function isIsentoIR(tipoVal) {
   return (t.includes('LCI') || t.includes('LCA'));
 }
 
-/** IOF simplificado (opcional). 
- *  Aqui, apenas reduzimos o rendimento do 1º mês (~50%) se marcado "sim".
- *  Observação: é apenas uma aproximação didática.
-*/
+/** IOF simplificado (opcional) */
 function aplicarIOFSimplificado(jurosMes, mesIndex, iofFlag) {
   if (iofFlag !== 'sim') return jurosMes;
-  if (mesIndex === 0) return jurosMes * 0.5; // reduz juros do 1º mês
+  if (mesIndex === 0) return jurosMes * 0.5;
   return jurosMes;
 }
 
 /** Executa a simulação */
 function calcular() {
-  // 1) Lê valores digitados (com do/virgula/pontos tratados)
-  const tipoVal       = tipo?.value || 'CDB';
-  const regimeVal     = regime?.value || 'pre';
-  const aporte0       = parseBRNumber(aporteInicial.value);
-  const aporteMes     = parseBRNumber(aporteMensal.value);
-  const meses         = parseInt(prazoMeses.value, 10) || 0;
-  const usarIOF       = (iofSelect?.value || 'nao');
+  const tipoVal   = tipo?.value || 'CDB';
+  const regimeVal = regime?.value || 'pre';
+  const aporte0   = parseBRNumber(aporteInicial.value);
+  const aporteMes = parseBRNumber(aporteMensal.value);
+  const meses     = parseInt(prazoMeses.value, 10) || 0;
+  const usarIOF   = (iofSelect?.value || 'nao');
 
-  // Data inicial
   let dataBase = new Date();
   if (dataInicio && dataInicio.value) {
     const [yyyy, mm, dd] = dataInicio.value.split('-').map(Number);
     if (yyyy && mm && dd) dataBase = new Date(Date.UTC(yyyy, mm - 1, dd));
   }
 
-  // 2) Taxas
-  const taxaAnualPercent = obterTaxaAnual(regimeVal);      // % a.a.
-  const taxaMensal       = annualPercentToMonthlyRate(taxaAnualPercent); // decimal
+  const taxaAnualPercent = obterTaxaAnual(regimeVal);
+  const taxaMensal = annualPercentToMonthlyRate(taxaAnualPercent);
 
-  // 3) Loop mês a mês
-  let saldo = 0;
-  let totalAportes = 0;
-  let totalJurosBrutos = 0;
+  let saldo = 0, totalAportes = 0, totalJurosBrutos = 0;
 
-  // mês 0 – aporte inicial
   saldo += aporte0;
   totalAportes += aporte0;
 
-  // zera tabela
   if (tbody) tbody.innerHTML = '';
 
   for (let m = 0; m < meses; m++) {
-    // data do "fechamento" do mês m
     const d = new Date(Date.UTC(
       dataBase.getUTCFullYear(),
       dataBase.getUTCMonth() + m + 1,
       dataBase.getUTCDate()
     ));
 
-    // aporte do mês (no início do mês para render)
     if (aporteMes > 0) {
       saldo += aporteMes;
       totalAportes += aporteMes;
     }
 
-    // juros do mês
     let jurosMes = saldo * taxaMensal;
     jurosMes = aplicarIOFSimplificado(jurosMes, m, usarIOF);
 
     saldo += jurosMes;
     totalJurosBrutos += jurosMes;
 
-    // adiciona linha à tabela
     if (tbody) {
       const tr = document.createElement('tr');
-
-      // Colunas: Mês, Data, Saldo (R$), Aporte (R$), Juros (R$)
-      const tdMes   = document.createElement('td');  tdMes.textContent = (m + 1).toString();
-      const tdData  = document.createElement('td');  tdData.textContent = fmtDate(d);
-      const tdSaldo = document.createElement('td');  tdSaldo.textContent = fmtBRL.format(saldo);
-      const tdAp    = document.createElement('td');  tdAp.textContent   = fmtBRL.format(aporteMes);
-      const tdJ     = document.createElement('td');  tdJ.textContent    = fmtBRL.format(jurosMes);
-
+      const tdMes   = document.createElement('td'); tdMes.textContent = (m + 1).toString();
+      const tdData  = document.createElement('td'); tdData.textContent = fmtDate(d);
+      const tdSaldo = document.createElement('td'); tdSaldo.textContent = fmtBRL.format(saldo);
+      const tdAp    = document.createElement('td'); tdAp.textContent   = fmtBRL.format(aporteMes);
+      const tdJ     = document.createElement('td'); tdJ.textContent    = fmtBRL.format(jurosMes);
       tr.append(tdMes, tdData, tdSaldo, tdAp, tdJ);
       tbody.appendChild(tr);
     }
   }
 
-  // 4) IR no resgate (CDB/Tesouro etc.)
-  const diasTotais = meses * 30; // aproximação
-  const bruto      = totalJurosBrutos;
-  const liquidoIR  = isIsentoIR(tipoVal) ? 0 : bruto * aliquotaIR(diasTotais);
+  const diasTotais = meses * 30;
+  const bruto = totalJurosBrutos;
+  const liquidoIR = isIsentoIR(tipoVal) ? 0 : bruto * aliquotaIR(diasTotais);
 
   const saldoFinalLiquido = saldo - liquidoIR;
   const totalInvestido    = totalAportes;
   const rendimentoBruto   = saldo - totalAportes;
   const impostos          = liquidoIR;
 
-  // 5) Preenche cards
   if (saldoLiquidoEl)    saldoLiquidoEl.textContent   = fmtBRL.format(saldoFinalLiquido);
   if (totalInvestidoEl)  totalInvestidoEl.textContent = fmtBRL.format(totalInvestido);
   if (rendimentoBrutoEl) rendimentoBrutoEl.textContent= fmtBRL.format(rendimentoBruto);
@@ -261,32 +264,32 @@ function calcular() {
    ========================================================= */
 
 function init() {
-  // mostra/oculta campos por regime
   updateRegimeUI();
+
+  // Atualiza IPCA automaticamente ao carregar
+  setIPCAFromIBGE();
+
+  // Recarrega IPCA ao trocar regime para IPCA+
   regime?.addEventListener('change', () => {
     updateRegimeUI();
+    if (regime.value === 'ipca') setIPCAFromIBGE();
   });
 
-  // Máscara automática
   attachBRLMask(aporteInicial);
   attachBRLMask(aporteMensal);
-
   attachPercentMask(taxaPre);
   attachPercentMask(percentCDI);
   attachPercentMask(cdiAnual);
   attachPercentMask(ipcaAnual);
   attachPercentMask(spread);
 
-  // Submete o form
   form?.addEventListener('submit', (e) => {
     e.preventDefault();
     calcular();
   });
 
-  // Calcula ao carregar
   calcular();
 
-  // Ano no rodapé (se existir)
   const anoEl = document.querySelector('#ano');
   if (anoEl) anoEl.textContent = String(new Date().getFullYear());
 }
