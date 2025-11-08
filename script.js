@@ -67,6 +67,35 @@ function attachBRLMask(inputEl){
   });
 }
 
+/** Máscara inteligente para o campo % do CDI (formato 00 / 000) */
+function attachCDIMask(inputEl){
+  if(!inputEl) return;
+
+  inputEl.addEventListener('input',()=>{
+    let d = inputEl.value.replace(/\D/g,''); // mantém só dígitos
+    if(!d){ inputEl.value=''; return; }
+    d = d.substring(0,3);                    // limita a 3 dígitos
+
+    // < 100 → 2 dígitos (ex: 95 → "95") | >=100 → 3 dígitos (ex: 105 → "105")
+    if (parseInt(d,10) < 100) {
+      inputEl.value = d.padStart(2,'0');
+    } else {
+      inputEl.value = d.padStart(3,'0');
+    }
+  });
+
+  inputEl.addEventListener('blur',()=>{
+    let d = inputEl.value.replace(/\D/g,'');
+    if(!d){ inputEl.value=''; return; }
+
+    if (parseInt(d,10) < 100) {
+      inputEl.value = d.padStart(2,'0');
+    } else {
+      inputEl.value = d.padStart(3,'0');
+    }
+  });
+}
+
 function attachPercentMask(inputEl){
   if(!inputEl) return;
   inputEl.addEventListener('input',()=>{
