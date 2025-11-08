@@ -108,7 +108,7 @@ function attachPercentMask(inputEl) {
    IPCA automático (dados oficiais IBGE)
    ========================================================= */
 
-const IPCA_API_URL = "https://api.sidra.ibge.gov.br/values/t/1737/n1/all/v/63/p/last%201/c315/7169/d/v63%2013";
+const IPCA_API_URL = "https://apisidra.ibge.gov.br/values/t/1737/n1/all/v/63/p/last%201/c315/7169/d/v63%2013";
 const IPCA_FALLBACK = 4.50; // valor padrão (% a.a.)
 
 async function setIPCAFromIBGE() {
