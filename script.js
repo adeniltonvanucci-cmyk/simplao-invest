@@ -227,7 +227,7 @@ function calcular(){
   if (tbody) tbody.innerHTML = '';
 
   for (let m=0; m<meses; m++){
-    const d = new Date(Date.UTC(dataBase.getUTCFullYear(), dataBase.getUTCMonth()+m+1, dataBase.getUTCDate()));
+    const d = new Date(Date.UTC(dataBase.getUTCFullYear(), dataBase.getUTCMonth() + m + 1, 0));
 
     if (m>0 && aporteMes>0){ saldo += aporteMes; totalAportes += aporteMes; }
 
