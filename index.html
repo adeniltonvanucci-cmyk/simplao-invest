@@ -3,33 +3,110 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Simplão • Ferramentas simples e úteis à sua disposição</title>
-  <meta name="description" content="Ferramentas simples e úteis à sua disposição: cálculo de investimentos, amortização de financiamento e guia prático de investimentos.">
-  <link rel="stylesheet" href="styles.css">
+  <title>Simplão • Ferramentas financeiras simples</title>
+  <meta name="description" content="Ferramentas gratuitas para simular investimentos, amortizações e aprender sobre finanças.">
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      background: #0f172a;
+      color: #f1f5f9;
+    }
+    .container {
+      max-width: 960px;
+      margin: auto;
+      padding: 2rem;
+    }
+    header, footer {
+      text-align: center;
+      padding: 2rem 1rem;
+    }
+    .logo {
+      width: 48px;
+      vertical-align: middle;
+      margin-right: 0.5rem;
+    }
+    h1 {
+      font-size: 2rem;
+      margin: 0.5rem 0;
+    }
+    .subtitle {
+      color: #94a3b8;
+      font-size: 1rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+      transition: transform 0.2s ease;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+    }
+    .card a {
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+    .card-icon {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+    footer {
+      font-size: 0.9rem;
+      color: #64748b;
+      margin-top: 3rem;
+    }
+  </style>
 </head>
 <body>
-  <header class="container header">
-    <div class="brand">
-      <img class="logo" alt="logo" src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f4b0.svg"/>
-      <div>
-        <h1>Simplão • Ferramentas simples e úteis à sua disposição</h1>
-        <p class="subtitle">Escolha uma ferramenta para começar</p>
-      </div>
-    </div>
+  <header>
+    <img class="logo" src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f4b0.svg" alt="logo" />
+    <h1>Simplão • Ferramentas financeiras simples</h1>
+    <p class="subtitle">Simule, aprenda e tome melhores decisões com praticidade.</p>
   </header>
 
   <main class="container">
-    <section class="grid" style="min-height:55vh;align-items:center">
-      <a class="btn" style="display:flex;justify-content:center;align-items:center;height:68px" href="calculo-investimento.html">📈 Cálculo de Investimento</a>
-      <a class="btn" style="display:flex;justify-content:center;align-items:center;height:68px" href="amortizacao.html">💳 Amortização de Financiamento</a>
-      <a class="btn" style="display:flex;justify-content:center;align-items:center;height:68px;background:#0b1220;border:1px solid var(--line);color:var(--text)" href="guia-investimentos.html">📘 Guia de Investimentos</a>
+    <section class="grid">
+      <div class="card">
+        <a href="calculo-investimento.html">
+          <div class="card-icon">📈</div>
+          <strong>Cálculo de Investimento</strong>
+          <p>Simule rentabilidade com aportes, taxas e prazos.</p>
+        </a>
+      </div>
+      <div class="card">
+        <a href="amortizacao.html">
+          <div class="card-icon">💳</div>
+          <strong>Amortização de Financiamento</strong>
+          <p>Compare PRICE e SAC com extras e exportações.</p>
+        </a>
+      </div>
+      <div class="card">
+        <a href="guia-investimentos.html">
+          <div class="card-icon">📘</div>
+          <strong>Guia de Investimentos</strong>
+          <p>Aprenda o básico sobre renda fixa e diversificação.</p>
+        </a>
+      </div>
     </section>
   </main>
 
-  <footer class="container footer">
+  <footer>
     <p>© <span id="ano"></span> Simplão • Educação financeira simples e prática.</p>
   </footer>
 
-  <script src="script.js" defer></script>
+  <script>
+    document.querySelector('#ano').textContent = new Date().getFullYear();
+  </script>
 </body>
 </html>
