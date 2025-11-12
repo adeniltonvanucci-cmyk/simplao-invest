@@ -208,6 +208,11 @@ function calcular(){
   const meses     = Math.max(0, parseInt(prazoMeses.value,10) || 0);
   const usarIOF   = (iofSelect?.value || 'nao');
 
+   if (aporte0 <= 0 && aporteMes <= 0) {
+  alert("Informe pelo menos um valor de aporte.");
+  return;
+}
+
   let dataBase = new Date();
   if (dataInicio && dataInicio.value){
     const [yyyy,mm,dd] = dataInicio.value.split('-').map(Number);
