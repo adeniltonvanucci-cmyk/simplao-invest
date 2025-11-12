@@ -107,21 +107,37 @@
             <input id="periodo" placeholder="360" inputmode="numeric" />
           </div>
         </div>
+      
+<!-- Campo de taxa de juros -->
+<div class="row two">
+  <div>
+    <label for="tipoTaxa">Tipo da taxa</label>
+    <select id="tipoTaxa">
+      <option value="aa" selected>Anual % (a.a)</option>
+      <option value="am">Mensal % (a.m)</option>
+    </select>
+  </div>
+  <div>
+    <label for="rate">Taxa de juros</label>
+    <input id="rate" placeholder="Ex: 9.8788" inputmode="decimal" />
+  </div>
+</div>
 
-        <!-- Tipo da taxa com rótulos pedidos -->
-        <div class="row two">
-          <div>
-            <label for="tipoTaxa">Tipo da taxa</label>
-            <select id="tipoTaxa">
-              <option value="aa" selected>Anual % (a.a)</option>
-              <option value="am">Mensal % (a.m)</option>
-            </select>
-          </div>
-          <div>
-            <label for="rate">Taxa de juros</label>
-            <input id="rate" placeholder="12,00" inputmode="decimal" />
-          </div>
-        </div>
+<!-- Script para tratar entrada -->
+<script>
+  document.getElementById("rate").addEventListener("change", function (e) {
+    let valorDigitado = e.target.value.trim().replace(",", ".");
+    let taxa = parseFloat(valorDigitado);
+
+    if (isNaN(taxa)) {
+      alert("Por favor, insira uma taxa válida (ex: 9.8788)");
+      e.target.focus();
+    } else {
+      console.log("Taxa registrada:", taxa);
+      // Aqui você pode usar a taxa para cálculos ou enviar ao servidor
+    }
+  });
+</script>
 
         <div class="row two">
           <div>
