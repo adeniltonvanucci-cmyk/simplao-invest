@@ -1,173 +1,35 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Simulador de Investimentos • Simplão Invest</title>
-  <meta name="description" content="Simulador gratuito de investimentos em renda fixa (CDB, LCI, LCA, Tesouro). Aportes mensais, IR regressivo e resultados claros.">
-  <link rel="icon" type="image/png" href="favicon.png">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Simplão • Ferramentas simples e úteis à sua disposição</title>
+  <meta name="description" content="Ferramentas simples e úteis à sua disposição: cálculo de investimentos, amortização de financiamento e guia prático de investimentos.">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header class="container header">
     <div class="brand">
-      <img class="logo" src="logo.png" alt="Simplão Invest">
+      <img class="logo" alt="logo" src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f4b0.svg"/>
       <div>
         <h1>Simplão • Ferramentas simples e úteis à sua disposição</h1>
-<div class="btns" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
-  <a class="btn" href="guia-investimentos.html">Guia de Investimentos</a>
-  <a class="btn" href="amortizacao.html">Simulador de Amortização</a>
-</div>
-
-        <p class="subtitle">Por <strong>Simplão Invest</strong> — 100% gratuito.</p>
+        <p class="subtitle">Escolha uma ferramenta para começar</p>
       </div>
     </div>
   </header>
 
-  <main class="container grid">
-    <!-- COLUNA ESQUERDA: FORMULÁRIO -->
-    <section class="card">
-      <h2>Parâmetros</h2>
-
-      <form id="simForm" autocomplete="off" novalidate>
-        <div class="row two">
-          <div>
-            <label for="tipo">Tipo de investimento</label>
-            <select id="tipo">
-              <option value="CDB" selected>CDB</option>
-              <option value="LCI">LCI (isento IR)</option>
-              <option value="LCA">LCA (isento IR)</option>
-              <option value="Tesouro">Tesouro</option>
-            </select>
-          </div>
-
-          <div>
-            <label for="regime">Rentabilidade</label>
-            <select id="regime">
-              <option value="pre" selected>Pré-fixado (a.a.)</option>
-              <option value="pos">% do CDI (pós-fixado)</option>
-              <option value="ipca">IPCA + taxa (a.a.)</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- CAMPOS DINÂMICOS (mostra/oculta pelo data-show-on) -->
-        <!-- Pré -->
-        <div class="row" data-show-on="pre">
-          <label for="taxaPre">Taxa pré (a.a. %)</label>
-          <input id="taxaPre" type="text" inputmode="decimal" value="0,00">
-        </div>
-
-        <!-- Pós (CDI) -->
-        <div class="row" data-show-on="pos" style="display:none">
-          <label for="percentCDI">% do CDI (ex: 105)</label>
-          <input id="percentCDI" type="text" inputmode="decimal" value="0,00">
-        </div>
-
-        <div class="row" data-show-on="pos" style="display:none">
-          <label for="cdiAnual">CDI anual (a.a. %)</label>
-          <input id="cdiAnual" type="text" inputmode="decimal" value="0,00">
-        </div>
-
-        <!-- IPCA+ -->
-        <div class="row" data-show-on="ipca" style="display:none">
-          <label for="ipcaAnual">IPCA anual (a.a. %)</label>
-          <input id="ipcaAnual" type="text" inputmode="decimal" value="0,00">
-        </div>
-
-        <div class="row" data-show-on="ipca" style="display:none">
-          <label for="spread">Taxa fixa (a.a. %)</label>
-          <input id="spread" type="text" inputmode="decimal" value="">
-        </div>
-
-        <div class="row two">
-          <div>
-            <label for="aporteInicial">Aporte inicial (R$)</label>
-            <input id="aporteInicial" type="text" inputmode="numeric" value="0,00">
-          </div>
-          <div>
-            <label for="aporteMensal">Aporte mensal (R$)</label>
-            <input id="aporteMensal" type="text" inputmode="numeric" value="0,00">
-          </div>
-        </div>
-
-        <div class="row two">
-          <div>
-            <label for="prazoMeses">Prazo (meses)</label>
-            <input id="prazoMeses" type="number" min="1" value="">
-          </div>
-          <div>
-            <label for="iof">Considerar IOF (0–30 dias)</label>
-            <select id="iof">
-              <option value="nao" selected>Não (simplificado)</option>
-              <option value="sim">Sim (aproximação)</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="row">
-          <label for="dataInicio">Data de início</label>
-          <input id="dataInicio" type="date" placeholder="dd/mm/aaaa">
-        </div>
-
-        <button type="submit" class="btn">Calcular</button>
-        <p class="note"><strong>13,71% a.a.</strong> (atualizado em 07/11/2025)<br>
-  Modelo didático. Indicadores variam; títulos têm regras específicas. Use para estimar e comparar.</p>
-      </form>
-    </section>
-
-    <!-- COLUNA DIREITA: RESULTADOS -->
-    <section class="card">
-      <h2>Resultado</h2>
-
-      <div class="metrics">
-        <div class="metric">
-          <div class="label">Saldo final líquido</div>
-          <div class="value" id="saldoLiquido">—</div>
-        </div>
-        <div class="metric">
-          <div class="label">Total investido</div>
-          <div class="value" id="totalInvestido">—</div>
-        </div>
-        <div class="metric">
-          <div class="label">Rendimento bruto</div>
-          <div class="value" id="rendimentoBruto">—</div>
-        </div>
-        <div class="metric">
-          <div class="label">Impostos (IR)</div>
-          <div class="value" id="impostos">—</div>
-        </div>
-      </div>
-
-      <div class="table-wrap">
-        <table id="tabela">
-          <thead>
-            <tr>
-              <th>Mês</th>
-              <th>Data</th>
-              <th>Saldo (R$)</th>
-              <th>Aporte (R$)</th>
-              <th>Juros (R$)</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
+  <main class="container">
+    <section class="grid" style="min-height:55vh;align-items:center">
+      <a class="btn" style="display:flex;justify-content:center;align-items:center;height:68px" href="calculo-investimento.html">📈 Cálculo de Investimento</a>
+      <a class="btn" style="display:flex;justify-content:center;align-items:center;height:68px" href="amortizacao.html">💳 Amortização de Financiamento</a>
+      <a class="btn" style="display:flex;justify-content:center;align-items:center;height:68px;background:#0b1220;border:1px solid var(--line);color:var(--text)" href="guia-investimentos.html">📘 Guia de Investimentos</a>
     </section>
   </main>
 
   <footer class="container footer">
-    <p>© <span id="ano"></span> Simplão Invest • Ferramentas gratuitas para decisões financeiras melhores.</p>
-    <p><a href="politica-privacidade.html">Política de Privacidade</a> • <a href="termos.html">Termos de Uso</a></p>
+    <p>© <span id="ano"></span> Simplão • Educação financeira simples e prática.</p>
   </footer>
 
-  <script src="script.js?v=2025.11.09.3" defer></script>
-<!-- Cloudflare Web Analytics -->
-  <script 
-    defer 
-    src="https://static.cloudflareinsights.com/beacon.min.js" 
-    data-cf-beacon='{"token": "321f3ac3df2e4308a7217d667a9be7fe"}'>
-  </script>
-  <!-- End Cloudflare Web Analytics -->
+  <script src="script.js" defer></script>
 </body>
 </html>
