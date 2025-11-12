@@ -195,4 +195,38 @@ function desenharGraficoAnual(canvas, linhas, data0) {
 
   const padL = 50 * devicePixelRatio;
   const padB = 28 * devicePixelRatio;
-  const padT = 20 * devicePixel
+  const padT = 20 * devicePixelRatio;
+
+const barW = (W - padL) / anos.length;
+anos.forEach((ano, idx) => {
+  const x = padL + idx * barW;
+  const hJuros = series[ano].juros / maxV * (H - padT - padB);
+  const hAmort = series[ano].amort / maxV * (H - padT - padB);
+
+  ctx.fillStyle = '#f44336';
+  ctx.fillRect(x, H - padB - hJuros, barW * 0.4, hJuros);
+
+  ctx.fillStyle = '#4caf50';
+  ctx.fillRect(x + barW * 0.5, H - padB - hAmort, barW * 0.4, hAmort);
+
+  ctx.fillStyle = '#000';
+  ctx.font = `${12 * devicePixelRatio}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.fillText(ano, x + barW / 2, H - padB + 16 * devicePixelRatio);
+});
+}
+
+// === EXECUÇÃO FINAL ===
+function lerDoQuery() {
+  const q = new URLSearchParams(location.search);
+  const campos = ['principal', 'periodo', 'sistema', 'tipoTaxa', 'dataInicio', 'rate', 'extraMensal', 'seguroTaxa'];
+  campos.forEach(c => {
+    const elCampo = el[c];
+    if (!elCampo || !q.has(c)) return;
+    elCampo.value = decodeURIComponent(q.get(c));
+  });
+  el.form.dispatchEvent(new Event('submit'));
+}
+
+document.querySelector('#ano').textContent = String(new Date().getFullYear());
+lerDoQuery();
