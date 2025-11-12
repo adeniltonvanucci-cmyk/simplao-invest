@@ -1,4 +1,4 @@
-<script>
+// === FORMATADORES E MÁSCARAS ===
 const fmtBRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const fmtDate = d => new Intl.DateTimeFormat('pt-BR', { timeZone: 'UTC' }).format(d);
 const parseBRNumber = str => {
@@ -8,31 +8,6 @@ const parseBRNumber = str => {
   return isNaN(v) ? 0 : v;
 };
 
-const $ = sel => document.querySelector(sel);
-const el = {
-  form: $('#amortForm'),
-  principal: $('#principal'),
-  periodo: $('#periodo'),
-  sistema: $('#sistema'),
-  tipoTaxa: $('#tipoTaxa'),
-  dataInicio: $('#dataInicio'),
-  rate: $('#rate'),
-  extraMensal: $('#extraMensal'),
-  extraValor: $('#extraValor'),
-  extraData: $('#extraData'),
-  addExtra: $('#addExtra'),
-  extrasChips: $('#extrasChips'),
-  seguroTaxa: $('#seguroTaxa'),
-  prestacaoIni: $('#prestacaoIni'),
-  totalPago: $('#totalPago'),
-  totalJuros: $('#totalJuros'),
-  mesesQuitados: $('#mesesQuitados'),
-  tabela: $('#tabela tbody'),
-  grafico: $('#grafico'),
-  baixarCsv: $('#baixarCsv'),
-  copiarLink: $('#copiarLink'),
-  baixarPdf: $('#baixarPdf')
-};
 function attachBRLMask(el) {
   if (!el) return;
   el.addEventListener('input', () => {
@@ -66,10 +41,38 @@ function attachPercentMask(el) {
   });
 }
 
+// === ELEMENTOS ===
+const $ = sel => document.querySelector(sel);
+const el = {
+  form: $('#amortForm'),
+  principal: $('#principal'),
+  periodo: $('#periodo'),
+  sistema: $('#sistema'),
+  tipoTaxa: $('#tipoTaxa'),
+  dataInicio: $('#dataInicio'),
+  rate: $('#rate'),
+  extraMensal: $('#extraMensal'),
+  extraValor: $('#extraValor'),
+  extraData: $('#extraData'),
+  addExtra: $('#addExtra'),
+  extrasChips: $('#extrasChips'),
+  seguroTaxa: $('#seguroTaxa'),
+  prestacaoIni: $('#prestacaoIni'),
+  totalPago: $('#totalPago'),
+  totalJuros: $('#totalJuros'),
+  mesesQuitados: $('#mesesQuitados'),
+  tabela: $('#tabela tbody'),
+  grafico: $('#grafico'),
+  baixarCsv: $('#baixarCsv'),
+  copiarLink: $('#copiarLink'),
+  baixarPdf: $('#baixarPdf')
+};
+
 ['#principal', '#seguroTaxa', '#extraValor', '#extraMensal'].forEach(sel => attachBRLMask($(sel)));
 attachPercentMask(el.rate);
 
 const extras = [];
+
 function monthIndexFromDate(startUTC, whenUTC) {
   const y1 = startUTC.getUTCFullYear(), m1 = startUTC.getUTCMonth();
   const y2 = whenUTC.getUTCFullYear(), m2 = whenUTC.getUTCMonth();
@@ -104,6 +107,7 @@ el.addExtra.onclick = () => {
   el.extraValor.value = ''; el.extraData.value = '';
   renderExtrasChips();
 };
+
 function mensalDeAnual(aa) {
   const a = (aa || 0) / 100;
   return Math.pow(1 + a, 1 / 12) - 1;
@@ -165,6 +169,30 @@ function gerarCronograma({ principal, iMes, nMeses, sistema, extras, extraMensal
     mesesExecutados
   };
 }
-el.form.addEventListener('submit', e => {
-  e.preventDefault();
-  const principal = parseBRNumber(el.principal.value
+
+function desenharGraficoAnual(canvas, linhas, data0) {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  const W = canvas.width = canvas.clientWidth * devicePixelRatio;
+  const H = canvas.height = canvas.clientHeight * devicePixelRatio;
+  ctx.clearRect(0, 0, W, H);
+  if (!linhas.length) return;
+
+  const series = {};
+  linhas.forEach((l, idx) => {
+    let ano = 'Sem data';
+    if (data0) {
+      const d = new Date(Date.UTC(data0.getUTCFullYear(), data0.getUTCMonth() + idx, data0.getUTCDate()));
+      ano = d.getUTCFullYear();
+    }
+    series[ano] = series[ano] || { juros: 0, amort: 0 };
+    series[ano].juros += l.juros;
+    series[ano].amort += l.amortizacao + l.extra;
+  });
+
+  const anos = Object.keys(series);
+  const maxV = Math.max(1, ...anos.map(a => series[a].juros + series[a].amort));
+
+  const padL = 50 * devicePixelRatio;
+  const padB = 28 * devicePixelRatio;
+  const padT = 20 * devicePixel
