@@ -73,14 +73,15 @@ const el = {
 el.rate.addEventListener("input", function (e) {
   let raw = e.target.value.replace(/[^\d.,]/g, '').replace(",", ".");
 
-  // Remove múltiplos pontos (mantém só o primeiro)
   const parts = raw.split(".");
   if (parts.length > 2) {
     raw = parts[0] + "." + parts.slice(1).join("");
   }
 
-  e.target.value = raw;
+  const valor = parseFloat(raw);
+  e.target.value = isNaN(valor) ? "" : valor.toFixed(4);
 });
+
 
 
 const extras = [];
