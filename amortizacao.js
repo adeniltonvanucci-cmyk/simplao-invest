@@ -121,6 +121,13 @@ function pmtPrice(P, i, n) {
   const f = Math.pow(1 + i, n);
   return P * (i * f) / (f - 1);
 }
+function getTaxaMensal() {
+  const taxaStr = el.rate.value.trim().replace(",", ".");
+  const taxa = parseFloat(taxaStr);
+  if (isNaN(taxa)) return 0;
+
+  return el.tipoTaxa.value === "aa" ? mensalDeAnual(taxa) : taxa / 100;
+}
 
 function gerarCronograma({ principal, iMes, nMeses, sistema, extras, extraMensal, seguroTaxa, data0 }) {
   const linhas = [];
