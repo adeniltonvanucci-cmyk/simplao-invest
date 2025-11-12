@@ -1,3 +1,116 @@
-<script src="js/amortizacao.js" defer></script>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Simplão • Amortização de Financiamentos</title>
+  <meta name="description" content="Simulador de amortização PRICE e SAC com extras mensais, amortizações por data, exportação CSV e PDF.">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="container header">
+    <div class="brand">
+      <img class="logo" alt="logo" src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f4b0.svg"/>
+      <div>
+        <h1>Amortização de Financiamentos</h1>
+        <p class="subtitle">PRICE e SAC, taxa a.a./a.m., amortizações por data e extra mensal, exportação CSV e PDF.</p>
+      </div>
+    </div>
+    <div class="btns">
+      <a class="btn secondary" href="index.html">← Voltar</a>
+    </div>
+  </header>
+
+  <main class="container grid">
+    <!-- FORMULÁRIO -->
+    <section class="card">
+      <form id="amortForm" role="form">
+        <label>Valor financiado</label>
+        <input id="principal" type="text" placeholder="R$ 100.000,00" />
+
+        <label>Prazo (meses)</label>
+        <input id="periodo" type="number" min="1" max="600" value="240" />
+
+        <label>Sistema</label>
+        <select id="sistema">
+          <option value="price">PRICE</option>
+          <option value="sac">SAC</option>
+        </select>
+
+        <label>Tipo de taxa</label>
+        <select id="tipoTaxa">
+          <option value="aa">Taxa anual</option>
+          <option value="am">Taxa mensal</option>
+        </select>
+
+        <label>Taxa de juros</label>
+        <input id="rate" type="text" placeholder="Ex: 12,5" />
+
+        <label>Data do 1º vencimento</label>
+        <input id="dataInicio" type="date" />
+
+        <label>Taxa mensal de seguro/taxa bancária</label>
+        <input id="seguroTaxa" type="text" placeholder="R$ 25,00" />
+
+        <label>Amortização extra mensal</label>
+        <input id="extraMensal" type="text" placeholder="R$ 0,00" />
+
+        <label>Amortizações por data</label>
+        <div class="row">
+          <input id="extraValor" type="text" placeholder="R$ 1.000,00" />
+          <input id="extraData" type="date" />
+          <button type="button" id="addExtra">Adicionar</button>
+        </div>
+        <div id="extrasChips" class="chips"></div>
+
+        <button type="submit" class="btn primary">Simular</button>
+      </form>
+    </section>
+
+    <!-- RESULTADOS -->
+    <section class="card">
+      <h2>Resumo</h2>
+      <div class="metrics">
+        <div><strong>Prestação inicial:</strong> <span id="prestacaoIni">—</span></div>
+        <div><strong>Total pago:</strong> <span id="totalPago">—</span></div>
+        <div><strong>Total de juros:</strong> <span id="totalJuros">—</span></div>
+        <div><strong>Meses quitados:</strong> <span id="mesesQuitados">—</span></div>
+      </div>
+      <canvas id="grafico" height="200"></canvas>
+      <div class="btns">
+        <button id="baixarCsv" class="btn secondary">Exportar CSV</button>
+        <button id="baixarPdf" class="btn secondary">Exportar PDF</button>
+        <button id="copiarLink" class="btn secondary">Copiar link</button>
+      </div>
+    </section>
+
+    <!-- TABELA -->
+    <section class="card" style="grid-column:1/-1">
+      <h2>Cronograma de amortização</h2>
+      <div class="table-wrap">
+        <table id="tabela">
+          <thead>
+            <tr>
+              <th>Mês</th>
+              <th>Data</th>
+              <th>Prestação</th>
+              <th>Amortização</th>
+              <th>Juros</th>
+              <th>Taxas</th>
+              <th>Extra</th>
+              <th>Saldo</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="container footer">
+    <p>© <span id="ano"></span> Simplão • Ferramentas gratuitas para decisões financeiras melhores.</p>
+  </footer>
+
+  <script src="js/amortizacao.js" defer></script>
 </body>
 </html>
