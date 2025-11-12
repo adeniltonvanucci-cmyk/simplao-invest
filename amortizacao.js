@@ -69,7 +69,10 @@ const el = {
 };
 
 ['#principal', '#seguroTaxa', '#extraValor', '#extraMensal'].forEach(sel => attachBRLMask($(sel)));
-attachPercentMask(el.rate);
+el.rate.addEventListener("input", () => {
+  el.rate.value = el.rate.value.replace(",", ".");
+});
+
 
 const extras = [];
 
