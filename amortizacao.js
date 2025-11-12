@@ -70,7 +70,7 @@ const el = {
 
 ['#principal', '#seguroTaxa', '#extraValor', '#extraMensal'].forEach(sel => attachBRLMask($(sel)));
 el.rate.addEventListener("input", () => {
-  // Permite apenas números, ponto e vírgula
+  // Remove tudo que não é número, ponto ou vírgula
   let raw = el.rate.value.replace(/[^\d.,]/g, '');
 
   // Converte vírgula para ponto
