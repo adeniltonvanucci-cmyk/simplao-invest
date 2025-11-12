@@ -26,18 +26,43 @@ function attachBRLMask(el) {
   });
 }
 
-function attachPercentMask(el) {
+/**
+ * Máscara de percentual PT-BR com N casas decimais (sem forçar arredondamento durante a digitação).
+ * @param {HTMLInputElement} el - input alvo
+ * @param {Object} opts
+ * @param {number} opts.maxInt - qtd máx. de dígitos antes da vírgula
+ * @param {number} opts.maxDec - qtd máx. de dígitos após a vírgula
+ * @param {number|null} opts.fixedOnBlur - se for número, força exatamente N casas no blur
+ */
+function attachPercentMask(el, { maxInt = 5, maxDec = 6, fixedOnBlur = null } = {}) {
   if (!el) return;
+
+  const sanitize = (val) => {
+    let s = String(val).replace(/[^\d.,]/g, '').replace(/\./g, ','); // normaliza para vírgula
+    const partes = s.split(',');
+    let inteiros = (partes[0] || '').replace(/\D/g, '');
+    let decimais = (partes.slice(1).join('') || '').replace(/\D/g, '');
+
+    if (maxInt > 0) inteiros = inteiros.slice(0, maxInt);
+    if (maxDec > 0) decimais = decimais.slice(0, maxDec);
+
+    if (decimais.length) return `${inteiros || '0'},${decimais}`;
+    return inteiros || '';
+  };
+
   el.addEventListener('input', () => {
-    let dg = el.value.replace(/\D/g, '');
-    if (!dg) { el.value = ''; return; }
-    dg = dg.substring(0, 5);
-    const val = (parseInt(dg, 10) / 100).toFixed(2);
-    el.value = val.replace('.', ',');
+    const pos = el.selectionStart; // tentativa de manter caret
+    el.value = sanitize(el.value);
+    // caret simples (opcional): coloca no fim após normalização
+    try { el.setSelectionRange(el.value.length, el.value.length); } catch {}
   });
+
   el.addEventListener('blur', () => {
-    const v = parseBRNumber(el.value);
-    el.value = v === 0 ? '' : v.toFixed(2).replace('.', ',');
+    if (/,+$/.test(el.value)) el.value = el.value.replace(/,+$/, '');
+    if (fixedOnBlur !== null) {
+      const v = parseBRNumber(el.value);
+      el.value = v ? v.toFixed(fixedOnBlur).replace('.', ',') : '';
+    }
   });
 }
 
@@ -68,21 +93,12 @@ const el = {
   baixarPdf: $('#baixarPdf')
 };
 
+// Máscaras de moeda
 ['#principal', '#seguroTaxa', '#extraValor', '#extraMensal'].forEach(sel => attachBRLMask($(sel)));
 
-el.rate.addEventListener("input", function (e) {
-  let raw = e.target.value.replace(/[^\d.,]/g, '').replace(",", ".");
-
-  const parts = raw.split(".");
-  if (parts.length > 2) {
-    raw = parts[0] + "." + parts.slice(1).join("");
-  }
-
-  const valor = parseFloat(raw);
-  e.target.value = isNaN(valor) ? "" : valor.toFixed(4);
-});
-
-
+// Máscara de percentual para o campo de taxa (permite até 6 casas após a vírgula)
+attachPercentMask(el.rate, { maxInt: 5, maxDec: 6, fixedOnBlur: null });
+// Se preferir fixar, por ex., 4 casas ao sair do campo: use fixedOnBlur: 4
 
 const extras = [];
 
@@ -131,11 +147,14 @@ function pmtPrice(P, i, n) {
   const f = Math.pow(1 + i, n);
   return P * (i * f) / (f - 1);
 }
+
+// >>> Usa parseBRNumber para ler a taxa com vírgula e muitas casas <<<
 function getTaxaMensal() {
-  const taxa = parseFloat(el.rate.value);
-  if (isNaN(taxa)) return 0;
-  return el.tipoTaxa.value === "aa" ? mensalDeAnual(taxa) : taxa / 100;
+  const taxaPercent = parseBRNumber(el.rate.value); // ex.: "1,234567" -> 1.234567
+  if (isNaN(taxaPercent)) return 0;
+  return el.tipoTaxa.value === "aa" ? mensalDeAnual(taxaPercent) : taxaPercent / 100;
 }
+
 function gerarCronograma({ principal, iMes, nMeses, sistema, extras, extraMensal, seguroTaxa, data0 }) {
   const linhas = [];
   let saldo = principal;
@@ -212,4 +231,7 @@ function desenharGraficoAnual(canvas, linhas, data0) {
 
   const padL = 50 * devicePixelRatio;
   const padB = 28 * devicePixelRatio;
-  const padT = 20 * devicePixel
+  const padT = 20 * devicePixelRatio;
+
+  // ... (restante do desenho do gráfico que você já tinha)
+}
