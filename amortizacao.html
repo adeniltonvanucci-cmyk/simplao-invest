@@ -3,27 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
   <title>Simplão Invest • Amortização de Financiamentos</title>
-  <meta name="description" content="Simule financiamentos com tabelas SAC e Price. Compare parcelas, juros e saldo devedor.">
-  <meta name="keywords" content="simulador de amortização, tabela SAC, tabela Price, financiamento, empréstimo, cálculo de parcelas, saldo devedor">
-  <meta name="robots" content="index, follow">
-  <meta name="author" content="Simplão Invest">
-
-  <!-- Open Graph -->
-  <meta property="og:title" content="Simulador de Amortização • Simplão Invest">
-  <meta property="og:description" content="Compare SAC e Price e veja como evoluem as parcelas e os juros do seu financiamento.">
-  <meta property="og:url" content="https://www.calcularinvestimento.com.br/amortizacao.html">
-  <meta property="og:image" content="https://www.calcularinvestimento.com.br/logo.png">
-  <meta property="og:type" content="website">
-  <meta property="og:locale" content="pt_BR">
-
-  <!-- Twitter -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Simulador de Amortização • Simplão Invest">
-  <meta name="twitter:description" content="Compare SAC e Price e veja como evoluem as parcelas e os juros do seu financiamento.">
-  <meta name="twitter:image" content="https://www.calcularinvestimento.com.br/logo.png">
-
   <style>
     :root{--bg:#0b1220;--card:#0f172a;--text:#e5e7eb;--muted:#94a3b8;--line:#1f2937;--primary:#2563eb;--primary-700:#1d4ed8;--radius:14px}
     html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,Roboto,Arial,sans-serif}
@@ -56,6 +36,8 @@
     .foot{display:flex;gap:12px;flex-wrap:wrap}
     .note{font-size:.85rem;color:var(--muted)}
     canvas{width:100%;height:260px;background:#0b1220;border:1px solid var(--line);border-radius:12px}
+
+    /* PRINT para PDF */
     @media print{
       body{background:#fff;color:#000}
       .card, .table-wrap, canvas{border-color:#ccc}
@@ -76,7 +58,7 @@
     <div class="brand">
       <img class="logo" alt="logo" src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f4b0.svg"/>
       <div>
-        <h1>Amortização de Financiamentos - www.calcularinvestimento.com.br</h1>
+        <h1>Amortização de Financiamentos</h1>
         <p class="subtitle">PRICE e SAC, taxa a.a./a.m., amortizações por data e extra mensal, exportação CSV e PDF.</p>
       </div>
     </div>
@@ -97,6 +79,7 @@
           </div>
         </div>
 
+        <!-- Tipo da taxa com rótulos pedidos -->
         <div class="row two">
           <div>
             <label for="tipoTaxa">Tipo da taxa</label>
@@ -106,8 +89,8 @@
             </select>
           </div>
           <div>
-            <label for="rate">Taxa de juros (%)</label>
-            <input id="rate" type="text" inputmode="decimal" placeholder="Ex.: 9,8788" />
+            <label for="rate">Taxa de juros</label>
+            <input id="rate" placeholder="12,00" inputmode="decimal" />
           </div>
         </div>
 
@@ -125,11 +108,13 @@
           </div>
         </div>
 
+        <!-- Novo: Extra mensal fixo -->
         <div class="row">
           <label for="extraMensal">Extra mensal fixo (R$) — opcional</label>
           <input id="extraMensal" placeholder="R$ 100,00" inputmode="numeric" />
         </div>
 
+        <!-- Amortizações extras por DATA, múltiplas entradas -->
         <div class="row">
           <label>Amortizações extras por data</label>
           <div class="tag">Requer informar a Data do 1º vencimento</div>
@@ -193,10 +178,6 @@
   </main>
 
   <footer class="container" style="text-align:center;color:var(--muted);margin:16px 0 10px">
-    <div class="no-print" style="margin-bottom:12px;">
-      <button class="btn secondary" onclick="window.location.href='index.html'">⬅️ Voltar à Página Inicial</button>
-    </div>
-
     <div class="print-header">
       <strong>Simplão Invest — Simulação de Amortização</strong><br/>
       <small>Origem: https://www.calcularinvestimento.com.br • Contato: contato@calcularinvestimento.com.br</small>
@@ -208,58 +189,10 @@
     // ===================== Utilidades BR =====================
     const fmtBRL = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' });
     const fmtDate = (d) => new Intl.DateTimeFormat('pt-BR', { timeZone:'UTC' }).format(d);
-    function parseBRNumber(str){
-      if(str==null) return 0;
-      const s=String(str).replace(/[^\d,.-]/g,'').replace(/\./g,'').replace(',', '.');
-      const v=parseFloat(s);
-      return isNaN(v)?0:v;
-    }
+    function parseBRNumber(str){ if(str==null) return 0; const s=String(str).replace(/[^\d,.-]/g,'').replace(/\./g,'').replace(',', '.'); const v=parseFloat(s); return isNaN(v)?0:v; }
 
-    function attachBRLMask(el){
-      if(!el) return;
-      el.addEventListener('input',()=>{
-        let dg=el.value.replace(/\D/g,'');
-        if(!dg){el.value='';return;}
-        dg=dg.substring(0,13);
-        const val=(parseInt(dg,10)/100).toFixed(2);
-        el.value=fmtBRL.format(val);
-      });
-      el.addEventListener('focus',()=>{ if(!el.value) el.value='R$ 0,00'; });
-      el.addEventListener('blur',()=>{
-        const v=parseBRNumber(el.value);
-        el.value=v===0?'':fmtBRL.format(v);
-      });
-    }
-
-    // === Máscara de percentual com N casas (sem toFixed durante digitação)
-    function attachPercentMask(el, { maxInt = 5, maxDec = 6, fixedOnBlur = null } = {}) {
-      if (!el) return;
-
-      const sanitize = (val) => {
-        let s = String(val).replace(/[^\d.,]/g, '').replace(/\./g, ','); // normaliza ponto -> vírgula
-        const partes = s.split(',');
-        let inteiros = (partes[0] || '').replace(/\D/g, '');
-        let decimais = (partes.slice(1).join('') || '').replace(/\D/g, '');
-
-        if (maxInt > 0) inteiros = inteiros.slice(0, maxInt);
-        if (maxDec > 0) decimais = decimais.slice(0, maxDec);
-
-        return decimais.length ? `${inteiros || '0'},${decimais}` : (inteiros || '');
-      };
-
-      el.addEventListener('input', () => {
-        el.value = sanitize(el.value);
-      });
-
-      el.addEventListener('blur', () => {
-        if (/,+$/.test(el.value)) el.value = el.value.replace(/,+$/, '');
-        // opcional: padronizar N casas ao sair do campo
-        if (fixedOnBlur !== null) {
-          const v = parseBRNumber(el.value);
-          el.value = v ? v.toFixed(fixedOnBlur).replace('.', ',') : '';
-        }
-      });
-    }
+    function attachBRLMask(el){ if(!el) return; el.addEventListener('input',()=>{ let dg=el.value.replace(/\D/g,''); if(!dg){el.value='';return;} dg=dg.substring(0,13); const val=(parseInt(dg,10)/100).toFixed(2); el.value=fmtBRL.format(val); }); el.addEventListener('focus',()=>{ if(!el.value) el.value='R$ 0,00'; }); el.addEventListener('blur',()=>{ const v=parseBRNumber(el.value); el.value=v===0?'':fmtBRL.format(v); }); }
+    function attachPercentMask(el){ if(!el) return; el.addEventListener('input',()=>{ let dg=el.value.replace(/\D/g,''); if(!dg){el.value='';return;} dg=dg.substring(0,5); const val=(parseInt(dg,10)/100).toFixed(2); el.value=String(val).replace('.', ','); }); el.addEventListener('blur',()=>{ const v=parseBRNumber(el.value); el.value=v===0?'':String(v.toFixed(2)).replace('.', ','); }); }
 
     // ===================== Cálculos =====================
     function mensalDeAnual(aa){ const a=(aa||0)/100; return Math.pow(1+a, 1/12)-1; }
@@ -293,6 +226,7 @@
           prest = amort + juros + taxas;
         }
 
+        // somatório de extras: por data + mensal fixo
         const extraAlvo = (extrasPorMes[m]||0) + (extraMensal||0);
         let extra = Math.min(Math.round(extraAlvo*100)/100, Math.max(0, saldo - amort));
 
@@ -327,10 +261,7 @@
       const series = {};
       linhas.forEach((l,idx)=>{
         let ano = 'Sem data';
-        if(data0){
-          const d = new Date(Date.UTC(data0.getUTCFullYear(), data0.getUTCMonth()+idx, data0.getUTCDate()));
-          ano = d.getUTCFullYear();
-        }
+        if(data0){ const d = new Date(Date.UTC(data0.getUTCFullYear(), data0.getUTCMonth()+idx, data0.getUTCDate())); ano = d.getUTCFullYear(); }
         series[ano] = series[ano] || {juros:0, amort:0};
         series[ano].juros += l.juros;
         series[ano].amort += (l.amortizacao + l.extra);
@@ -361,15 +292,7 @@
     // ===================== CSV, Link e PDF =====================
     function toCSV(linhas){
       const header = ['Mes','Data','Prestacao','Amortizacao','Juros','Taxas','Extra','Saldo'];
-      const rows = linhas.map(l=>[
-        l.mes,l.data,
-        l.prestacao.toFixed(2),
-        l.amortizacao.toFixed(2),
-        l.juros.toFixed(2),
-        l.taxas.toFixed(2),
-        l.extra.toFixed(2),
-        l.saldo.toFixed(2)
-      ]);
+      const rows = linhas.map(l=>[l.mes,l.data, l.prestacao.toFixed(2), l.amortizacao.toFixed(2), l.juros.toFixed(2), l.taxas.toFixed(2), l.extra.toFixed(2), l.saldo.toFixed(2)]);
       const csv = [header.join(';')].concat(rows.map(r=>r.join(';'))).join('\n');
       return new Blob(["\uFEFF"+csv], {type:'text/csv;charset=utf-8;'});
     }
@@ -384,32 +307,15 @@
     // ===================== Controle da UI =====================
     const $ = (sel)=>document.querySelector(sel);
     const el = {
-      form: $('#amortForm'),
-      principal: $('#principal'),
-      periodo: $('#periodo'),
-      sistema: $('#sistema'),
-      tipoTaxa: $('#tipoTaxa'),
-      dataInicio: $('#dataInicio'),
-      rate: $('#rate'),
+      form: $('#amortForm'), principal: $('#principal'), periodo: $('#periodo'), sistema: $('#sistema'), tipoTaxa: $('#tipoTaxa'), dataInicio: $('#dataInicio'), rate: $('#rate'),
       extraMensal: $('#extraMensal'),
-      extraValor: $('#extraValor'),
-      extraData: $('#extraData'),
-      addExtra: $('#addExtra'),
-      extrasChips: $('#extrasChips'),
+      extraValor: $('#extraValor'), extraData: $('#extraData'), addExtra: $('#addExtra'), extrasChips: $('#extrasChips'),
       seguroTaxa: $('#seguroTaxa'),
-      prestacaoIni: $('#prestacaoIni'),
-      totalPago: $('#totalPago'),
-      totalJuros: $('#totalJuros'),
-      mesesQuitados: $('#mesesQuitados'),
-      tabela: $('#tabela tbody'),
-      grafico: $('#grafico'),
-      baixarCsv: $('#baixarCsv'),
-      copiarLink: $('#copiarLink'),
-      baixarPdf: $('#baixarPdf')
+      prestacaoIni: $('#prestacaoIni'), totalPago: $('#totalPago'), totalJuros: $('#totalJuros'), mesesQuitados: $('#mesesQuitados'), tabela: $('#tabela tbody'), grafico: $('#grafico'), baixarCsv: $('#baixarCsv'), copiarLink: $('#copiarLink'), baixarPdf: $('#baixarPdf')
     };
 
     ['#principal','#seguroTaxa','#extraValor','#extraMensal'].forEach(sel=> attachBRLMask($(sel)) );
-    attachPercentMask(el.rate, { maxInt: 5, maxDec: 6, fixedOnBlur: null });
+    attachPercentMask(el.rate);
 
     const extras = []; // {valor:number, data:Date, mes:int}
 
@@ -440,17 +346,8 @@
     };
 
     function lerDoQuery(){
-      const url = new URL(location.href);
-      const get=(k,d='')=> url.searchParams.get(k) ?? d;
-      el.principal.value = get('p','');
-      el.rate.value = get('i','');
-      el.periodo.value = get('n','');
-      el.sistema.value = get('sys','price');
-      el.tipoTaxa.value = get('t','aa');
-      el.dataInicio.value = get('d','');
-      el.seguroTaxa.value = get('fee','');
-      el.extraMensal.value = get('em','');
-
+      const url = new URL(location.href); const get=(k,d='')=> url.searchParams.get(k) ?? d;
+      el.principal.value = get('p',''); el.rate.value = get('i',''); el.periodo.value = get('n',''); el.sistema.value = get('sys','price'); el.tipoTaxa.value = get('t','aa'); el.dataInicio.value = get('d',''); el.seguroTaxa.value = get('fee',''); el.extraMensal.value = get('em','');
       // extras via EXn=valor@data
       const exParams = [...url.searchParams.entries()].filter(([k])=>/^ex\d+$/.test(k));
       extras.length = 0;
@@ -461,8 +358,7 @@
         if(val>0 && Y){
           const d = new Date(Date.UTC(Y,M-1,D));
           if(el.dataInicio.value){
-            const [Y0,M0,D0] = el.dataInicio.value.split('-').map(Number);
-            const d0 = new Date(Date.UTC(Y0,M0-1,D0));
+            const [Y0,M0,D0] = el.dataInicio.value.split('-').map(Number); const d0 = new Date(Date.UTC(Y0,M0-1,D0));
             const mes = monthIndexFromDate(d0, d);
             if(mes>=1) extras.push({valor:val,data:d,mes});
           }
@@ -472,22 +368,8 @@
     }
 
     function paramsAtuais(){
-      const params = {
-        p: el.principal.value,
-        i: el.rate.value,
-        n: el.periodo.value,
-        sys: el.sistema.value,
-        t: el.tipoTaxa.value,
-        d: el.dataInicio.value,
-        fee: el.seguroTaxa.value,
-        em: el.extraMensal.value
-      };
-      extras.forEach((ex,idx)=>{
-        const y=ex.data.getUTCFullYear(),
-              m=String(ex.data.getUTCMonth()+1).padStart(2,'0'),
-              d=String(ex.data.getUTCDate()).padStart(2,'0');
-        params[`ex${idx+1}`] = `${fmtBRL.format(ex.valor)}@${y}-${m}-${d}`;
-      });
+      const params = { p: el.principal.value, i: el.rate.value, n: el.periodo.value, sys: el.sistema.value, t: el.tipoTaxa.value, d: el.dataInicio.value, fee: el.seguroTaxa.value, em: el.extraMensal.value };
+      extras.forEach((ex,idx)=>{ const y=ex.data.getUTCFullYear(), m=String(ex.data.getUTCMonth()+1).padStart(2,'0'), d=String(ex.data.getUTCDate()).padStart(2,'0'); params[`ex${idx+1}`] = `${fmtBRL.format(ex.valor)}@${y}-${m}-${d}`; });
       return params;
     }
 
@@ -499,11 +381,7 @@
       const tipoTaxa = el.tipoTaxa.value;
       const seguroTaxa = parseBRNumber(el.seguroTaxa.value);
       const extraMensal = parseBRNumber(el.extraMensal.value);
-      let data0=null;
-      if(el.dataInicio.value){
-        const [Y,M,D]=el.dataInicio.value.split('-').map(Number);
-        if(Y&&M&&D) data0=new Date(Date.UTC(Y,M-1,D));
-      }
+      let data0=null; if(el.dataInicio.value){ const [Y,M,D]=el.dataInicio.value.split('-').map(Number); if(Y&&M&&D) data0=new Date(Date.UTC(Y,M-1,D)); }
       if(!(principal>0)&&!(nMeses>0)) return;
 
       const iMes = (tipoTaxa==='aa')? mensalDeAnual(taxa) : (taxa/100);
@@ -513,8 +391,7 @@
         extras.forEach(ex=>{ extrasMes.push({ valor:ex.valor, mes:ex.mes, data:ex.data }); });
       }
 
-      const {linhas,totalJuros,totalPago,mesesExecutados} =
-        gerarCronograma({principal, iMes, nMeses, sistema, extras:extrasMes, extraMensal, seguroTaxa, data0});
+      const {linhas,totalJuros,totalPago,mesesExecutados} = gerarCronograma({principal, iMes, nMeses, sistema, extras:extrasMes, extraMensal, seguroTaxa, data0});
 
       if(linhas.length){
         el.prestacaoIni.textContent = fmtBRL.format(linhas[0].prestacao);
@@ -540,21 +417,13 @@
 
       desenharGraficoAnual(el.grafico, linhas, data0);
 
-      el.baixarCsv.onclick = ()=>{
-        const blob=toCSV(linhas);
-        const a=document.createElement('a');
-        a.href=URL.createObjectURL(blob);
-        a.download='amortizacao.csv';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(a.href);
-      };
+      el.baixarCsv.onclick = ()=>{ const blob=toCSV(linhas); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='amortizacao.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href); };
       el.copiarLink.onclick = ()=> copiarLink(paramsAtuais());
       el.baixarPdf.onclick = ()=> exportarPDF();
     }
 
     el.form.addEventListener('submit', (e)=>{ e.preventDefault(); calcular(); });
+
     document.querySelector('#ano').textContent = String(new Date().getFullYear());
     lerDoQuery();
   </script>
