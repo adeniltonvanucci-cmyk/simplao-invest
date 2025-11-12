@@ -46,64 +46,71 @@
           </div>
         </div>
 
-        <!-- CAMPOS DINÂMICOS (mostra/oculta pelo data-show-on) -->
-        <!-- Pré -->
-        <div class="row" data-show-on="pre">
-          <label for="taxaPre">Taxa pré (a.a. %)</label>
-          <input id="taxaPre" type="text" inputmode="decimal" value="0,00">
-        </div>
+     <!-- CAMPOS DINÂMICOS (mostra/oculta pelo data-show-on) -->
+<!-- Pré -->
+<div class="row" data-show-on="pre">
+  <label for="taxaPre">Taxa pré (a.a. %)</label>
+  <input id="taxaPre" type="text" inputmode="decimal" value="0,00" placeholder="Ex: 12,50" aria-label="Taxa pré anual">
+</div>
 
-        <!-- Pós (CDI) -->
-        <div class="row" data-show-on="pos" style="display:none">
-          <label for="percentCDI">% do CDI (ex: 105)</label>
-          <input id="percentCDI" type="text" inputmode="decimal" value="0,00">
-        </div>
+<!-- Pós (CDI) -->
+<div class="row" data-show-on="pos" style="display:none">
+  <label for="percentCDI">% do CDI (ex: 105)</label>
+  <input id="percentCDI" type="text" inputmode="decimal" value="0,00" placeholder="Ex: 105" aria-label="Percentual do CDI">
+</div>
 
-        <div class="row" data-show-on="pos" style="display:none">
-          <label for="cdiAnual">CDI anual (a.a. %)</label>
-          <input id="cdiAnual" type="text" inputmode="decimal" value="13,71">
-        </div>
+<div class="row" data-show-on="pos" style="display:none">
+  <label for="cdiAnual">CDI anual (a.a. %)</label>
+  <input id="cdiAnual" type="text" inputmode="decimal" value="13,71" placeholder="Ex: 13,71" aria-label="CDI anual">
+</div>
 
-        <!-- IPCA+ -->
-        <div class="row" data-show-on="ipca" style="display:none">
-          <label for="ipcaAnual">IPCA anual (a.a. %)</label>
-          <input id="ipcaAnual" type="text" inputmode="decimal" value="0,00">
-        </div>
+<!-- IPCA+ -->
+<div class="row" data-show-on="ipca" style="display:none">
+  <label for="ipcaAnual">IPCA anual (a.a. %)</label>
+  <input id="ipcaAnual" type="text" inputmode="decimal" value="0,00" placeholder="Ex: 4,50" aria-label="IPCA anual">
+</div>
 
-        <div class="row" data-show-on="ipca" style="display:none">
-          <label for="spread">Taxa fixa (a.a. %)</label>
-          <input id="spread" type="text" inputmode="decimal" value="0,00">
-        </div>
+<div class="row" data-show-on="ipca" style="display:none">
+  <label for="spread">Taxa fixa (a.a. %)</label>
+  <input id="spread" type="text" inputmode="decimal" value="0,00" placeholder="Ex: 5,00" aria-label="Taxa fixa anual">
+</div>
 
-        <div class="row two">
-          <div>
-            <label for="aporteInicial">Aporte inicial (R$)</label>
-            <input id="aporteInicial" type="text" inputmode="numeric" value="0,00">
-          </div>
-          <div>
-            <label for="aporteMensal">Aporte mensal (R$)</label>
-            <input id="aporteMensal" type="text" inputmode="numeric" value="0,00">
-          </div>
-        </div>
+<fieldset>
+  <legend>Parâmetros da simulação</legend>
 
-        <div class="row two">
-          <div>
-            <label for="prazoMeses">Prazo (meses)</label>
-            <input id="prazoMeses" type="number" min="1" value="0,00">
-          </div>
-          <div>
-            <label for="iof">Considerar IOF (0–30 dias)</label>
-            <select id="iof">
-              <option value="nao" selected>Não (simplificado)</option>
-              <option value="sim">Sim (aproximação)</option>
-            </select>
-          </div>
-        </div>
+  <div class="row two">
+    <div>
+      <label for="aporteInicial">Aporte inicial (R$)</label>
+      <input id="aporteInicial" type="text" inputmode="numeric" value="0,00"
+             placeholder="Ex: R$ 1.000,00" aria-label="Aporte inicial em reais" required>
+    </div>
+    <div>
+      <label for="aporteMensal">Aporte mensal (R$)</label>
+      <input id="aporteMensal" type="text" inputmode="numeric" value="0,00"
+             placeholder="Ex: R$ 200,00" aria-label="Aporte mensal em reais">
+    </div>
+  </div>
 
-        <div class="row">
-          <label for="dataInicio">Data de início</label>
-          <input id="dataInicio" type="date" placeholder="dd/mm/aaaa">
-        </div>
+  <div class="row two">
+    <div>
+      <label for="prazoMeses">Prazo (meses)</label>
+      <input id="prazoMeses" type="number" min="1" value="0"
+             placeholder="Ex: 24" aria-label="Prazo em meses" required>
+    </div>
+    <div>
+      <label for="iof">Considerar IOF (0–30 dias)</label>
+      <select id="iof" aria-label="Considerar IOF">
+        <option value="nao" selected>Não (simplificado)</option>
+        <option value="sim">Sim (aproximação)</option>
+      </select>
+    </div>
+  </div>
+</fieldset>
+
+<div class="row">
+  <label for="dataInicio">Data de início</label>
+  <input id="dataInicio" type="date" placeholder="dd/mm/aaaa" aria-label="Data de início da simulação">
+</div>
 
         <button type="submit" class="btn">Calcular</button>
         <p class="note">CDI de referência: <strong>13,71% a.a.</strong> (atualizado em 07/11/2025)<br>
@@ -118,7 +125,7 @@
       <div class="metrics">
         <div class="metric">
           <div class="label">Saldo final líquido</div>
-          <div class="value" id="saldoLiquido">—</div>
+          <div class="value" id="saldoLiquido" aria-live="polite">—</div>
         </div>
         <div class="metric">
           <div class="label">Total investido</div>
