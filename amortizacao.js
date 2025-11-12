@@ -69,9 +69,22 @@ const el = {
 };
 
 ['#principal', '#seguroTaxa', '#extraValor', '#extraMensal'].forEach(sel => attachBRLMask($(sel)));
-el.rate.addEventListener("input", () => {
-  el.rate.value = el.rate.value.replace(",", ".");
+l.rate.addEventListener("input", () => {
+  // Permite apenas números, ponto e vírgula
+  let raw = el.rate.value.replace(/[^\d.,]/g, '');
+
+  // Converte vírgula para ponto
+  raw = raw.replace(",", ".");
+
+  // Remove múltiplos pontos (mantém só o primeiro)
+  const parts = raw.split(".");
+  if (parts.length > 2) {
+    raw = parts[0] + "." + parts.slice(1).join("");
+  }
+
+  el.rate.value = raw;
 });
+
 
 
 const extras = [];
