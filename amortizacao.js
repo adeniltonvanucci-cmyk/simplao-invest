@@ -69,12 +69,9 @@ const el = {
 };
 
 ['#principal', '#seguroTaxa', '#extraValor', '#extraMensal'].forEach(sel => attachBRLMask($(sel)));
-el.rate.addEventListener("input", () => {
-  // Remove tudo que não é número, ponto ou vírgula
-  let raw = el.rate.value.replace(/[^\d.,]/g, '');
 
-  // Converte vírgula para ponto
-  raw = raw.replace(",", ".");
+el.rate.addEventListener("input", function (e) {
+  let raw = e.target.value.replace(/[^\d.,]/g, '').replace(",", ".");
 
   // Remove múltiplos pontos (mantém só o primeiro)
   const parts = raw.split(".");
@@ -82,9 +79,8 @@ el.rate.addEventListener("input", () => {
     raw = parts[0] + "." + parts.slice(1).join("");
   }
 
-  el.rate.value = raw;
+  e.target.value = raw;
 });
-
 
 
 const extras = [];
