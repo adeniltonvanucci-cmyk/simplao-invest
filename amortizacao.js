@@ -33,38 +33,52 @@ function attachBRLMask(el) {
   });
 }
 
-/**
- * Máscara percentual para taxa de juros:
- * - Usa apenas dígitos na digitação.
- * - Até 4 dígitos: trata como 2 casas decimais (ex: 766 -> 7,66).
- * - 5 ou 6 dígitos: trata como 4 casas decimais (ex: 79347 -> 7,9347).
- * - No blur: sempre normaliza para 4 casas com vírgula.
- */
-function attachPercentMask(el, _opts = {}) {
+// Máscara percentual: deixa digitar ponto/vírgula e só limita tamanho
+function attachPercentMask(el) {
   if (!el) return;
 
   el.addEventListener('input', () => {
-    let dg = el.value.replace(/\D/g, '');
-    if (!dg) { el.value = ''; return; }
+    let v = el.value;
 
-    // até 6 dígitos -> permite 7,66 / 7,9347 / 12,3456 etc.
-    dg = dg.substring(0, 6);
+    // permite só dígitos, ponto e vírgula
+    v = v.replace(/[^0-9.,]/g, '');
 
-    let val;
-    if (dg.length <= 4) {
-      // até 4 dígitos: 2 casas decimais
-      val = (parseInt(dg, 10) / 100).toFixed(2); // ex: 766 -> 7.66
+    // mantém só o primeiro separador (ponto ou vírgula)
+    const firstSep = v.search(/[.,]/);
+    if (firstSep !== -1) {
+      const sep = v[firstSep];
+      let intPart = v.slice(0, firstSep).replace(/\D/g, '');
+      let decPart = v.slice(firstSep + 1).replace(/\D/g, '');
+
+      // limita inteiros e decimais
+      intPart = intPart.slice(0, 5);  // ex: até 99999
+      decPart = decPart.slice(0, 4);  // ex: 4 casas decimais
+
+      v = intPart + (decPart ? sep + decPart : '');
     } else {
-      // 5 ou 6 dígitos: 4 casas decimais
-      val = (parseInt(dg, 10) / 10000).toFixed(4); // ex: 79347 -> 7.9347
+      // sem separador ainda -> só dígitos, limita inteiros
+      v = v.replace(/\D/g, '').slice(0, 5);
     }
 
-    el.value = String(val).replace('.', ',');
+    el.value = v;
   });
 
   el.addEventListener('blur', () => {
-    const v = parseBRNumber(el.value);
-    el.value = v === 0 ? '' : v.toFixed(4).replace('.', ',');
+    let v = el.value.trim();
+    if (!v) return;
+
+    // normaliza para vírgula
+    v = v.replace('.', ',');
+
+    const partes = v.split(',');
+    let intPart = (partes[0] || '0').replace(/\D/g, '');
+    let decPart = (partes[1] || '').replace(/\D/g, '');
+
+    if (!intPart) intPart = '0';
+    // preenche/limita para 4 casas decimais
+    decPart = decPart.padEnd(4, '0').slice(0, 4);
+
+    el.value = intPart + ',' + decPart;
   });
 }
 
