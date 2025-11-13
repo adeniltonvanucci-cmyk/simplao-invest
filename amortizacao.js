@@ -45,32 +45,59 @@ function attachBRLMask(el) {
 // → preserva o separador enquanto digita
 // → até 4 casas decimais
 // → formata como XX,XXXX no blur
-function attachPercentMask(el) {
+function attachPercentMask(el, { maxInt = 5, maxDec = 6, fixedOnBlur = 4 } = {}) {
   if (!el) return;
 
-  el.addEventListener("input", () => {
-    let v = el.value;
+  el.addEventListener("input", (e) => {
+    let v = e.target.value;
 
-    // mantém apenas números + separadores
-    v = v.replace(/[^0-9.,]/g, "");
+    // permite vírgula ou ponto imediatamente
+    v = v.replace(/[^\d.,]/g, '');
 
-    // mantém só o primeiro separador
+    // Se começar com vírgula -> vira "0,"
+    if (v.startsWith(",") || v.startsWith(".")) {
+      v = "0" + v;
+    }
+
+    // garante somente UM separador
     const firstSep = v.search(/[.,]/);
     if (firstSep !== -1) {
       const sep = v[firstSep];
-      let intPart = v.slice(0, firstSep).replace(/\D/g, "");
-      let decPart = v.slice(firstSep + 1).replace(/\D/g, "");
+      let inteiros = v.slice(0, firstSep).replace(/\D/g, '');
+      let decimais = v.slice(firstSep + 1).replace(/\D/g, '');
 
-      intPart = intPart.slice(0, 5); // até 99999%
-      decPart = decPart.slice(0, 4); // até 4 casas
+      inteiros = inteiros.slice(0, maxInt);
+      decimais = decimais.slice(0, maxDec);
 
-      v = intPart + (decPart ? sep + decPart : "");
+      v = decimais.length ? `${inteiros}${sep}${decimais}` : `${inteiros}${sep}`;
     } else {
-      v = v.replace(/\D/g, "").slice(0, 5);
+      // só inteiros
+      v = v.replace(/\D/g, '').slice(0, maxInt);
     }
 
-    el.value = v;
+    e.target.value = v;
   });
+
+  el.addEventListener("blur", (e) => {
+    let v = e.target.value;
+
+    if (!v) return;
+
+    // tira separador no final
+    v = v.replace(/[,\.]$/, "");
+
+    // normaliza para número
+    const num = parseBRNumber(v);
+
+    if (isNaN(num)) {
+      e.target.value = "";
+      return;
+    }
+
+    // formata com casas decimais fixas
+    e.target.value = num.toFixed(fixedOnBlur).replace(".", ",");
+  });
+}
 
   el.addEventListener("blur", () => {
     let v = el.value.trim();
