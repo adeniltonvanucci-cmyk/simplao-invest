@@ -34,55 +34,37 @@ function attachBRLMask(el) {
 }
 
 /**
- * Máscara percentual flexível:
- * - Aceita ponto OU vírgula como separador enquanto digita (não converte na hora).
- * - Garante apenas UM separador e limita inteiros/decimais.
- * - No blur: normaliza para vírgula (BR). Se fixedOnBlur for numérico, fixa N casas.
+ * Máscara percentual para taxa de juros:
+ * - Usa apenas dígitos na digitação.
+ * - Até 4 dígitos: trata como 2 casas decimais (ex: 766 -> 7,66).
+ * - 5 ou 6 dígitos: trata como 4 casas decimais (ex: 79347 -> 7,9347).
+ * - No blur: sempre normaliza para 4 casas com vírgula.
  */
-function attachPercentMask(el, { maxInt = 5, maxDec = 6, normalizeOnBlur = true, fixedOnBlur = null } = {}) {
+function attachPercentMask(el, _opts = {}) {
   if (!el) return;
 
-  const sanitize = (val) => {
-    let s = String(val).replace(/[^\d.,]/g, ''); // permite dígitos e separadores
-    // mantém só o primeiro separador (ponto ou vírgula), remove os demais
-    const firstSepIndex = s.search(/[.,]/);
-    if (firstSepIndex !== -1) {
-      const head = s.slice(0, firstSepIndex + 1);
-      const tail = s.slice(firstSepIndex + 1).replace(/[.,]/g, '');
-      s = head + tail;
-    }
-    // separa inteiros e decimais pelo primeiro separador encontrado
-    const parts = s.split(/[.,]/);
-    let inteiros = (parts[0] || '').replace(/\D/g, '');
-    let decimais = (parts[1] || '').replace(/\D/g, '');
-
-    if (maxInt > 0) inteiros = inteiros.slice(0, maxInt);
-    if (maxDec > 0) decimais = decimais.slice(0, maxDec);
-
-    // preserva o separador que o usuário digitou (se houver)
-    const sep = firstSepIndex !== -1 ? s[firstSepIndex] : ',';
-    return decimais.length ? `${inteiros || '0'}${sep}${decimais}` : (inteiros || '');
-  };
-
   el.addEventListener('input', () => {
-    el.value = sanitize(el.value);
+    let dg = el.value.replace(/\D/g, '');
+    if (!dg) { el.value = ''; return; }
+
+    // até 6 dígitos -> permite 7,66 / 7,9347 / 12,3456 etc.
+    dg = dg.substring(0, 6);
+
+    let val;
+    if (dg.length <= 4) {
+      // até 4 dígitos: 2 casas decimais
+      val = (parseInt(dg, 10) / 100).toFixed(2); // ex: 766 -> 7.66
+    } else {
+      // 5 ou 6 dígitos: 4 casas decimais
+      val = (parseInt(dg, 10) / 10000).toFixed(4); // ex: 79347 -> 7.9347
+    }
+
+    el.value = String(val).replace('.', ',');
   });
 
   el.addEventListener('blur', () => {
-    if (!el.value) return;
-    let vStr = String(el.value);
-    // normaliza separador para vírgula no blur, se desejado
-    if (normalizeOnBlur) {
-      vStr = vStr.replace('.', ',');
-    }
-    // remove vírgulas finais
-    vStr = vStr.replace(/,+$/, '');
-    // fixa casas, se solicitado
-    if (fixedOnBlur !== null) {
-      const v = parseBRNumber(vStr);
-      vStr = v ? v.toFixed(fixedOnBlur).replace('.', ',') : '';
-    }
-    el.value = vStr;
+    const v = parseBRNumber(el.value);
+    el.value = v === 0 ? '' : v.toFixed(4).replace('.', ',');
   });
 }
 
@@ -258,9 +240,7 @@ const el = {
 
 // aplica máscaras
 ['#principal', '#seguroTaxa', '#extraValor', '#extraMensal'].forEach(sel => attachBRLMask($(sel)));
-// percentual: aceita '.' e ',' na digitação e normaliza para vírgula ao sair do campo
-attachPercentMask(el.rate, { maxInt: 5, maxDec: 6, normalizeOnBlur: true, fixedOnBlur: null });
-// Se quiser sempre 4 casas ao sair do campo, use: fixedOnBlur: 4
+attachPercentMask(el.rate); // taxa de juros
 
 const extras = []; // { valor:number, data:Date, mes:int }
 
