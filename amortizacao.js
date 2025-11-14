@@ -42,7 +42,7 @@ function attachBRLMask(el) {
 
 /**
  * Máscara percentual:
- * - aceita vírgula ou ponto na hora (não trava);
+ * - aceita vírgula ou ponto enquanto digita (não trava);
  * - permite até maxInt dígitos inteiros e maxDec decimais;
  * - no blur formata com fixedOnBlur casas decimais (padrão: 4).
  */
@@ -108,6 +108,52 @@ function attachPercentMask(
   });
 }
 
+// ===================== TR automática (Banco Central) =====================
+
+/**
+ * Consulta TR MÊS (série 226) no Banco Central e devolve
+ * um mapa { "AAAA-MM": trComoFração }.
+ * Ex.: "2025-01": 0.0001  (0,01% no mês)
+ */
+async function obterTRMensalMapa(dataInicial, dataFinal) {
+  const fmtBCB = (d) => {
+    const dia = String(d.getUTCDate()).padStart(2, "0");
+    const mes = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const ano = d.getUTCFullYear();
+    return `${dia}/${mes}/${ano}`; // dd/MM/aaaa
+  };
+
+  const url =
+    "https://api.bcb.gov.br/dados/serie/bcdata.sgs.226/dados" +
+    `?formato=json&dataInicial=${fmtBCB(dataInicial)}&dataFinal=${fmtBCB(
+      dataFinal
+    )}`;
+
+  const resp = await fetch(url);
+  if (!resp.ok) {
+    throw new Error("Erro ao consultar TR no Banco Central");
+  }
+
+  const dados = await resp.json();
+  const mapa = {};
+
+  dados.forEach((item) => {
+    // item.data pode vir "MM/AAAA" ou "DD/MM/AAAA"
+    const partes = item.data.split("/");
+    let mes, ano;
+    if (partes.length === 2) {
+      [mes, ano] = partes;
+    } else {
+      [, mes, ano] = partes;
+    }
+    const chave = `${ano}-${String(mes).padStart(2, "0")}`;
+    const trPercent = parseFloat(item.valor.replace(",", ".")) || 0;
+    mapa[chave] = trPercent / 100; // % -> fração
+  });
+
+  return mapa; // { "2025-01": 0.0001, ... }
+}
+
 // ===================== Cálculos =====================
 
 function mensalDeAnual(aa) {
@@ -129,6 +175,11 @@ function monthIndexFromDate(startUTC, whenUTC) {
   return (y2 - y1) * 12 + (m2 - m1) + 1;
 }
 
+/**
+ * Agora com TR automática OPCIONAL:
+ * - mapaTR é { "AAAA-MM": fração } ou null
+ * - se mapaTR for null, o saldo NÃO é corrigido pela TR.
+ */
 function gerarCronograma({
   principal,
   iMes,
@@ -138,6 +189,7 @@ function gerarCronograma({
   extraMensal,
   seguroTaxa,
   data0,
+  mapaTR,
 }) {
   const linhas = [];
   let saldo = principal;
@@ -170,6 +222,17 @@ function gerarCronograma({
           )
         )
       : null;
+
+    // === APLICA TR DO MÊS (se existir) AO SALDO ===
+    if (data && mapaTR) {
+      const chaveMes = `${data.getUTCFullYear()}-${String(
+        data.getUTCMonth() + 1
+      ).padStart(2, "0")}`;
+      const trMes = mapaTR[chaveMes] || 0; // fração
+      if (trMes !== 0) {
+        saldo = Math.round(saldo * (1 + trMes) * 100) / 100;
+      }
+    }
 
     const juros = Math.round(saldo * iMes * 100) / 100;
     let amort = 0,
@@ -359,6 +422,7 @@ const el = {
   baixarCsv: $("#baixarCsv"),
   copiarLinkBtn: $("#copiarLink"),
   baixarPdf: $("#baixarPdf"),
+  usarTR: $("#usarTR"), // <-- checkbox da TR
 };
 
 ["#principal", "#seguroTaxa", "#extraValor", "#extraMensal"].forEach(
@@ -433,6 +497,7 @@ function paramsAtuais() {
     d: el.dataInicio.value,
     fee: el.seguroTaxa.value,
     em: el.extraMensal.value,
+    tr: el.usarTR && el.usarTR.checked ? "1" : "0",
   };
   extras.forEach((ex, idx) => {
     const y = ex.data.getUTCFullYear();
@@ -455,6 +520,11 @@ function lerDoQuery() {
   el.dataInicio.value = get("d", "");
   el.seguroTaxa.value = get("fee", "");
   el.extraMensal.value = get("em", "");
+
+  const trFlag = get("tr", "0");
+  if (el.usarTR) {
+    el.usarTR.checked = trFlag === "1";
+  }
 
   const exParams = [...url.searchParams.entries()].filter(([k]) =>
     /^ex\d+$/.test(k)
@@ -479,7 +549,8 @@ function lerDoQuery() {
   renderExtrasChips();
 }
 
-function calcular() {
+// ==== CÁLCULO PRINCIPAL (AGORA ASSÍNCRONO POR CAUSA DA TR) ====
+async function calcular() {
   const principal = parseBRNumber(el.principal.value);
   const taxa = parseBRNumber(el.rate.value);
   const nMeses = parseInt(el.periodo.value || "0", 10);
@@ -500,6 +571,26 @@ function calcular() {
 
   const iMes = tipoTaxa === "aa" ? mensalDeAnual(taxa) : taxa / 100;
 
+  // === TR MENSAL AUTOMÁTICA OPCIONAL ===
+  let mapaTR = null;
+  const usarTR = el.usarTR && el.usarTR.checked;
+
+  if (usarTR && data0 && nMeses > 0) {
+    try {
+      const dataFim = new Date(
+        Date.UTC(
+          data0.getUTCFullYear(),
+          data0.getUTCMonth() + (nMeses - 1),
+          data0.getUTCDate()
+        )
+      );
+      mapaTR = await obterTRMensalMapa(data0, dataFim);
+    } catch (err) {
+      console.error("Falha ao obter TR do Banco Central:", err);
+      mapaTR = null; // segue sem TR
+    }
+  }
+
   const extrasMes = [];
   if (data0) {
     extras.forEach((ex) =>
@@ -517,6 +608,7 @@ function calcular() {
       extraMensal,
       seguroTaxa,
       data0,
+      mapaTR,
     });
 
   if (linhas.length) {
@@ -568,9 +660,9 @@ function calcular() {
 
 // Inicialização
 if (el.form) {
-  el.form.addEventListener("submit", (e) => {
+  el.form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    calcular();
+    await calcular();
   });
 }
 
