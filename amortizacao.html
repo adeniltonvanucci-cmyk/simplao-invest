@@ -113,7 +113,15 @@
             <option value="am">Mensal % (a.m)</option>
           </select>
         </div>
-
+      <!-- Opção: aplicar correção pela TR -->
+<div class="row">
+  <label class="check-tr">
+    <input type="checkbox" id="usarTR" checked />
+    Aplicar correção da TR (Banco Central) ao saldo devedor
+  </label>
+  <p class="note">Quando ativado, o saldo é corrigido mensalmente antes do cálculo de juros.</p>
+</div>
+ 
         <div>
           <label for="rate">Taxa de juros (%)</label>
           <input id="rate" type="text" placeholder="Ex: 7,9347" inputmode="decimal">
