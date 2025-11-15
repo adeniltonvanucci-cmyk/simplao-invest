@@ -399,6 +399,7 @@ function exportarPDF() {
 // ===================== Controle da UI =====================
 const $ = (sel) => document.querySelector(sel);
 
+// Referências aos elementos do HTML
 const el = {
   form: $("#amortForm"),
   principal: $("#principal"),
@@ -417,19 +418,19 @@ const el = {
   totalPago: $("#totalPago"),
   totalJuros: $("#totalJuros"),
   mesesQuitados: $("#mesesQuitados"),
-  tabela: $("#tabela tbody"),
+  // CORREÇÃO APLICADA AQUI: Busca o tbody dentro da tabela#tabela
+  tabela: $("#tabela tbody"), 
   grafico: $("#grafico"),
   baixarCsv: $("#baixarCsv"),
   copiarLinkBtn: $("#copiarLink"),
   baixarPdf: $("#baixarPdf"),
-  usarTR: $("#usarTR"), // <-- checkbox da TR
+  usarTR: $("#usarTR"),
 };
 
+// Aplicação das Máscaras
 ["#principal", "#seguroTaxa", "#extraValor", "#extraMensal"].forEach(
   (sel) => attachBRLMask($(sel))
 );
-
-// MÁSCARA DA TAXA (%)
 attachPercentMask(el.rate, { maxInt: 5, maxDec: 6, fixedOnBlur: 4 });
 
 const extras = []; // { valor, data, mes }
@@ -446,9 +447,16 @@ function renderExtrasChips() {
         ex.valor
       )}`;
       chip.title = "Clique para remover";
+      // Usamos .bind(null, idx) para capturar o índice correto no momento do clique
       chip.onclick = () => {
-        extras.splice(idx, 1);
-        renderExtrasChips();
+        // Remove pelo índice, ajustando a ordem de remoção
+        const idxParaRemover = extras.findIndex(
+          (e) => e.mes === ex.mes && e.valor === ex.valor
+        );
+        if (idxParaRemover > -1) {
+            extras.splice(idxParaRemover, 1);
+            renderExtrasChips();
+        }
       };
       el.extrasChips.appendChild(chip);
     });
@@ -567,7 +575,16 @@ async function calcular() {
     }
   }
 
-  if (!(principal > 0) || !(nMeses > 0)) return;
+  if (!(principal > 0) || !(nMeses > 0)) {
+    // Limpa os resultados se os dados de entrada forem inválidos
+    el.tabela.innerHTML = "";
+    el.prestacaoIni.textContent = "R$ 0,00";
+    el.totalPago.textContent = "R$ 0,00";
+    el.totalJuros.textContent = "R$ 0,00";
+    el.mesesQuitados.textContent = "0";
+    desenharGraficoAnual(el.grafico, [], data0);
+    return;
+  }
 
   const iMes = tipoTaxa === "aa" ? mensalDeAnual(taxa) : taxa / 100;
 
@@ -587,7 +604,7 @@ async function calcular() {
       mapaTR = await obterTRMensalMapa(data0, dataFim);
     } catch (err) {
       console.error("Falha ao obter TR do Banco Central:", err);
-      mapaTR = null; // segue sem TR
+      // Se falhar, mapaTR continua null e o cálculo segue sem TR
     }
   }
 
@@ -669,4 +686,10 @@ if (el.form) {
 const spanAno = document.querySelector("#ano");
 if (spanAno) spanAno.textContent = String(new Date().getFullYear());
 
-lerDoQuery();
+// Roda o lerDoQuery e o cálculo inicial ao carregar a página
+lerDoQuery(); 
+
+// Tenta calcular ao carregar, caso os parâmetros já estejam na URL
+if (new URLSearchParams(location.search).toString().length > 0) {
+    calcular();
+}
