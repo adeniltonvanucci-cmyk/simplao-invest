@@ -1,225 +1,142 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <title>Simplão Invest • Amortização de Financiamentos</title>
-  <meta name="description" content="Simule financiamentos com SAC e PRICE, extras por data, extra mensal e exportação CSV/PDF.">
-  <meta name="keywords" content="simulador amortização, price, sac, financiamento, cálculo de parcelas, saldo devedor">
-  <meta name="robots" content="index, follow">
-
-  <!-- SOCIAL -->
-  <meta property="og:title" content="Simulador de Amortização • Simplão Invest">
-  <meta property="og:description" content="Compare SAC e PRICE, amortizações extras, extra mensal e gráfico anual.">
-  <meta property="og:url" content="https://www.calcularinvestimento.com.br/amortizacao.html">
-  <meta property="og:image" content="https://www.calcularinvestimento.com.br/logo.png">
-  <meta property="og:type" content="website">
-
-  <style>
-    :root{
-      --bg:#0b1220; --card:#0f172a; --text:#e5e7eb; --muted:#94a3b8;
-      --line:#1f2937; --primary:#2563eb; --primary-700:#1d4ed8; --radius:14px;
-    }
-    html,body{ margin:0; background:var(--bg); color:var(--text); font-family:Inter,system-ui,Roboto,Arial,sans-serif; }
-    .container{ max-width:1180px; margin:0 auto; padding:18px; }
-    .header{ display:flex; gap:16px; align-items:center; }
-    .brand{ display:flex; gap:12px; align-items:center; }
-    .logo{ width:44px; height:44px; }
-    h1{ margin:0; font-size:1.35rem; }
-    .subtitle{ margin:4px 0 0; font-size:.92rem; color:var(--muted); }
-
-    .grid{ display:grid; grid-template-columns:1fr 1fr; gap:20px; }
-    @media(max-width:900px){ .grid{ grid-template-columns:1fr; } }
-
-    .card{
-      background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02) 60%);
-      border:1px solid var(--line); border-radius:var(--radius);
-      padding:16px;
-    }
-
-    label{ display:block; margin:8px 0 6px; color:var(--muted); font-weight:600; font-size:.9rem; }
-    input,select,button{
-      width:100%; background:#0b1220; border:1px solid var(--line); color:var(--text);
-      padding:10px 12px; border-radius:12px; font-size:.95rem;
-    }
-    button.btn{
-      background:linear-gradient(90deg,var(--primary),var(--primary-700)); font-weight:800;
-      border:0; color:white; margin-top:6px; cursor:pointer;
-    }
-    button.secondary{ background:#0b1220; border:1px solid var(--line); }
-
-    .row{ margin-bottom:14px; }
-    .row.two{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-
-    .metrics{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:12px; }
-    .metric{ border:1px solid var(--line); padding:12px; border-radius:12px; }
-    .label{ color:var(--muted); font-size:.82rem; }
-    .value{ font-size:1.08rem; margin-top:3px; font-weight:800; }
-
-    .chips{ display:flex; gap:8px; flex-wrap:wrap; }
-    .chip{
-      background:#0b1220; border:1px solid var(--line);
-      border-radius:999px; padding:6px 10px; font-size:.85rem; cursor:pointer;
-    }
-
-    table{ width:100%; border-collapse:collapse; font-size:.9rem; }
-    thead th{ background:#0f172a; padding:10px; border-bottom:1px solid var(--line); position:sticky; top:0; }
-    tbody{ display:block; max-height:440px; overflow:auto; }
-    tbody tr, thead{ display:table; width:100%; table-layout:fixed; }
-    tbody td{ border-bottom:1px solid var(--line); padding:10px; }
-
-    canvas{ width:100%; height:260px; background:#0b1220; border-radius:12px; border:1px solid var(--line); }
-
-    footer{ text-align:center; color:var(--muted); margin:16px 0 10px; }
-  </style>
+    <meta charset="UTF-8">
+    <title>Simulador de Amortização</title>
+    <style>
+        /* Estilos básicos para os chips */
+        .chip {
+            display: inline-block;
+            padding: 4px 8px;
+            margin: 2px;
+            background-color: #e0e0e0;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+    </style>
 </head>
-
 <body>
 
-<header class="container header">
-  <div class="brand">
-    <img class="logo" src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f4b0.svg">
-    <div>
-      <h1>Amortização de Financiamentos</h1>
-      <p class="subtitle">PRICE e SAC • Extras por data • Extra mensal • CSV • PDF</p>
+    <div class="container">
+        <h1>Simulador de Amortização</h1>
+        
+        <form id="amortForm">
+            <section>
+                <h2>Dados do Financiamento</h2>
+                
+                <label for="principal">Valor Principal (R$):</label>
+                <input type="text" id="principal" value="200.000,00" required><br>
+
+                <label for="periodo">Prazo (Meses):</label>
+                <input type="number" id="periodo" value="360" required min="1"><br>
+
+                <label for="sistema">Sistema de Amortização:</label>
+                <select id="sistema" required>
+                    <option value="price">Price</option>
+                    <option value="sac">SAC</option>
+                </select><br>
+
+                <label for="dataInicio">Data do 1º Vencimento:</label>
+                <input type="date" id="dataInicio" value="2026-02-01" required><br>
+                
+                <label for="tipoTaxa">Tipo de Taxa:</label>
+                <select id="tipoTaxa" required>
+                    <option value="aa">Taxa Anual (% a.a.)</option>
+                    <option value="mes">Taxa Mensal (% a.m.)</option>
+                </select><br>
+                
+                <label for="rate">Taxa de Juros (%):</label>
+                <input type="text" id="rate" value="10,0000" required><br>
+                
+                <label for="seguroTaxa">Seguro/Taxas Mensais Fixas (R$):</label>
+                <input type="text" id="seguroTaxa" value="0,00"><br>
+
+                <div>
+                    <input type="checkbox" id="usarTR" checked>
+                    <label for="usarTR">Usar correção pela TR (Banco Central)</label>
+                </div>
+            </section>
+            
+            <hr>
+            
+            <section>
+                <h2>Amortizações Extras</h2>
+                
+                <label for="extraMensal">Extra Mensal Fixo (R$):</label>
+                <input type="text" id="extraMensal" value="0,00"><br>
+
+                <label for="extraValor">Valor Extra Único (R$):</label>
+                <input type="text" id="extraValor"><br>
+
+                <label for="extraData">Data do Extra:</label>
+                <input type="date" id="extraData"><br>
+                
+                <button type="button" id="addExtra">Adicionar Amortização Extra</button>
+                
+                <div id="extrasChips" style="margin-top: 10px;">
+                    </div>
+            </section>
+            
+            <hr>
+            
+            <button type="submit">Calcular Cronograma</button>
+            <button type="button" id="copiarLink">Copiar Link</button>
+        </form>
+
+        <hr>
+
+        <section id="resultados">
+            <h2>Resultados</h2>
+            <p>Prestação Inicial: <strong id="prestacaoIni">R$ 0,00</strong></p>
+            <p>Total Pago: <strong id="totalPago">R$ 0,00</strong></p>
+            <p>Total de Juros: <strong id="totalJuros">R$ 0,00</strong></p>
+            <p>Meses para Quitação: <strong id="mesesQuitados">0</strong></p>
+        </section>
+
+        <section id="grafico-section">
+            <h2>Gráfico Anual</h2>
+            <canvas id="grafico" width="800" height="300" style="width: 100%; height: 300px;"></canvas>
+        </section>
+
+        <section id="tabela-section">
+            <h2>Cronograma de Amortização</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Mês</th>
+                        <th>Data</th>
+                        <th>Prestação (R$)</th>
+                        <th>Amortização (R$)</th>
+                        <th>Juros (R$)</th>
+                        <th>Taxas (R$)</th>
+                        <th>Extra (R$)</th>
+                        <th>Saldo (R$)</th>
+                    </tr>
+                </thead>
+                <tbody id="tabela">
+                    </tbody>
+            </table>
+            
+            <div>
+                <button id="baixarCsv">Baixar CSV</button>
+                <button id="baixarPdf">Exportar PDF</button>
+            </div>
+        </section>
+        
+        <footer>
+            <p>&copy; <span id="ano"></span> Simulador. | Versão 1.0</p>
+        </footer>
     </div>
-  </div>
-</header>
-
-<main class="container grid">
-
-  <!-- COLUNA 1 – FORMULÁRIO -->
-  <section class="card">
-    <form id="amortForm">
-
-      <div class="row two">
-        <div>
-          <label for="principal">Valor financiado (R$)</label>
-          <input id="principal" placeholder="R$ 300.000,00" inputmode="numeric">
-        </div>
-
-        <div>
-          <label for="periodo">Prazo (meses)</label>
-          <input id="periodo" placeholder="360" inputmode="numeric">
-        </div>
-      </div>
-
-      <div class="row two">
-        <div>
-          <label for="tipoTaxa">Tipo da taxa</label>
-          <select id="tipoTaxa">
-            <option value="aa" selected>Anual % (a.a)</option>
-            <option value="am">Mensal % (a.m)</option>
-          </select>
-        </div>
-      <!-- Opção: aplicar correção pela TR -->
-<div class="row">
-  <label class="check-tr">
-    <input type="checkbox" id="usarTR" checked />
-    Aplicar correção da TR (Banco Central) ao saldo devedor
-  </label>
-  <p class="note">Quando ativado, o saldo é corrigido mensalmente antes do cálculo de juros.</p>
-</div>
- 
-        <div>
-          <label for="rate">Taxa de juros (%)</label>
-          <input id="rate" type="text" placeholder="Ex: 7,9347" inputmode="decimal">
-        </div>
-      </div>
-
-      <div class="row two">
-        <div>
-          <label for="sistema">Sistema</label>
-          <select id="sistema">
-            <option value="price">PRICE</option>
-            <option value="sac">SAC</option>
-          </select>
-        </div>
-
-        <div>
-          <label for="dataInicio">1º vencimento</label>
-          <input id="dataInicio" type="date">
-        </div>
-      </div>
-
-      <div class="row">
-        <label for="extraMensal">Extra mensal fixo (R$)</label>
-        <input id="extraMensal" placeholder="R$ 100,00" inputmode="numeric">
-      </div>
-
-      <div class="row">
-        <label>Amortizações extras por data</label>
-
-        <div class="row two">
-          <input id="extraValor" placeholder="R$ 5.000,00" inputmode="numeric">
-          <input id="extraData" type="date">
-        </div>
-
-        <button type="button" class="btn secondary" id="addExtra">Adicionar</button>
-        <div class="chips" id="extrasChips"></div>
-      </div>
-
-      <div class="row">
-        <label for="seguroTaxa">Seguro/tarifas mensais (R$)</label>
-        <input id="seguroTaxa" placeholder="R$ 0,00" inputmode="numeric">
-      </div>
-
-      <button class="btn" type="submit">Calcular</button>
-
-    </form>
-  </section>
-
-  <!-- COLUNA 2 – RESULTADOS -->
-  <section class="card">
-    <div class="metrics">
-      <div class="metric"><div class="label">Prestação inicial</div><div class="value" id="prestacaoIni">—</div></div>
-      <div class="metric"><div class="label">Total pago</div><div class="value" id="totalPago">—</div></div>
-      <div class="metric"><div class="label">Total juros</div><div class="value" id="totalJuros">—</div></div>
-      <div class="metric"><div class="label">Meses quitados</div><div class="value" id="mesesQuitados">—</div></div>
-    </div>
-
-    <canvas id="grafico"></canvas>
-
-    <div class="row" style="margin-top:14px;">
-      <button class="btn" id="baixarCsv" type="button">Baixar CSV</button>
-      <button class="btn" id="copiarLink" type="button">Copiar link</button>
-      <button class="btn" id="baixarPdf" type="button">Exportar PDF</button>
-    </div>
-
-  </section>
-
-  <!-- TABELA COMPLETA -->
-  <section class="card" style="grid-column:1 / -1">
-    <h2 style="margin:0 0 10px">Cronograma de amortização</h2>
-
-    <div class="table-wrap">
-      <table id="tabela">
-        <thead>
-          <tr>
-            <th>Mês</th>
-            <th>Data</th>
-            <th>Prestação (R$)</th>
-            <th>Amortização (R$)</th>
-            <th>Juros (R$)</th>
-            <th>Seguro (R$)</th>
-            <th>Extra (R$)</th>
-            <th>Saldo (R$)</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </section>
-
-</main>
-
-<footer class="container">
-  © <span id="ano"></span> Simplão Invest — Ferramentas financeiras gratuitas.
-</footer>
-
-<!-- IMPORTA O JS COMPLETO -->
-<script src="amortizacao.js"></script>
-
+    
+    <script>
+        // COLE AQUI TODO O SEU CÓDIGO JAVASCRIPT
+        // ... (todo o código que você enviou antes) ...
+    </script>
 </body>
 </html>
