@@ -9,7 +9,6 @@
   <meta name="keywords" content="simulador amortização, price, sac, financiamento, cálculo de parcelas, saldo devedor">
   <meta name="robots" content="index, follow">
 
-  <!-- SOCIAL -->
   <meta property="og:title" content="Simulador de Amortização • Simplão Invest">
   <meta property="og:description" content="Compare SAC e PRICE, amortizações extras, extra mensal e gráfico anual.">
   <meta property="og:url" content="https://www.calcularinvestimento.com.br/amortizacao.html">
@@ -20,6 +19,7 @@
     :root{
       --bg:#0b1220; --card:#0f172a; --text:#e5e7eb; --muted:#94a3b8;
       --line:#1f2937; --primary:#2563eb; --primary-700:#1d4ed8; --radius:14px;
+      --tr-check-bg: #1f2937; /* Cor de fundo para o checkbox da TR */
     }
     html,body{ margin:0; background:var(--bg); color:var(--text); font-family:Inter,system-ui,Roboto,Arial,sans-serif; }
     .container{ max-width:1180px; margin:0 auto; padding:18px; }
@@ -39,6 +39,30 @@
     }
 
     label{ display:block; margin:8px 0 6px; color:var(--muted); font-weight:600; font-size:.9rem; }
+    /* Ajustes para a label de checkbox */
+    label.check-tr {
+      display: flex;
+      align-items: center;
+      margin: 10px 0;
+      color: var(--text);
+      font-weight: normal;
+      font-size: .95rem;
+      background: var(--tr-check-bg);
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+    }
+    .check-tr input[type="checkbox"] {
+        width: auto;
+        margin-right: 10px;
+        transform: scale(1.2);
+    }
+    .note {
+        font-size: 0.8rem;
+        color: var(--muted);
+        margin: -5px 0 10px 0;
+    }
+
     input,select,button{
       width:100%; background:#0b1220; border:1px solid var(--line); color:var(--text);
       padding:10px 12px; border-radius:12px; font-size:.95rem;
@@ -57,7 +81,7 @@
     .label{ color:var(--muted); font-size:.82rem; }
     .value{ font-size:1.08rem; margin-top:3px; font-weight:800; }
 
-    .chips{ display:flex; gap:8px; flex-wrap:wrap; }
+    .chips{ display:flex; gap:8px; flex-wrap:wrap; margin-top: 8px; }
     .chip{
       background:#0b1220; border:1px solid var(--line);
       border-radius:999px; padding:6px 10px; font-size:.85rem; cursor:pointer;
@@ -65,7 +89,14 @@
 
     table{ width:100%; border-collapse:collapse; font-size:.9rem; }
     thead th{ background:#0f172a; padding:10px; border-bottom:1px solid var(--line); position:sticky; top:0; }
-    tbody{ display:block; max-height:440px; overflow:auto; }
+    /* Estilos para a rolagem da tabela */
+    .table-wrap {
+      max-height: 440px;
+      overflow-y: auto;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+    }
+    tbody{ display:table-row-group; }
     tbody tr, thead{ display:table; width:100%; table-layout:fixed; }
     tbody td{ border-bottom:1px solid var(--line); padding:10px; }
 
@@ -89,49 +120,48 @@
 
 <main class="container grid">
 
-  <!-- COLUNA 1 – FORMULÁRIO -->
   <section class="card">
     <form id="amortForm">
 
       <div class="row two">
         <div>
           <label for="principal">Valor financiado (R$)</label>
-          <input id="principal" placeholder="R$ 300.000,00" inputmode="numeric">
+          <input id="principal" placeholder="R$ 300.000,00" inputmode="numeric" required>
         </div>
 
         <div>
           <label for="periodo">Prazo (meses)</label>
-          <input id="periodo" placeholder="360" inputmode="numeric">
+          <input id="periodo" placeholder="360" inputmode="numeric" required>
         </div>
       </div>
 
       <div class="row two">
         <div>
           <label for="tipoTaxa">Tipo da taxa</label>
-          <select id="tipoTaxa">
+          <select id="tipoTaxa" required>
             <option value="aa" selected>Anual % (a.a)</option>
             <option value="am">Mensal % (a.m)</option>
           </select>
         </div>
-      <!-- Opção: aplicar correção pela TR -->
-<div class="row">
-  <label class="check-tr">
-    <input type="checkbox" id="usarTR" checked />
-    Aplicar correção da TR (Banco Central) ao saldo devedor
-  </label>
-  <p class="note">Quando ativado, o saldo é corrigido mensalmente antes do cálculo de juros.</p>
-</div>
- 
+        
         <div>
           <label for="rate">Taxa de juros (%)</label>
-          <input id="rate" type="text" placeholder="Ex: 7,9347" inputmode="decimal">
+          <input id="rate" type="text" placeholder="Ex: 7,9347" inputmode="decimal" required>
         </div>
+      </div>
+      
+      <div class="row">
+        <label class="check-tr">
+          <input type="checkbox" id="usarTR" checked />
+          Aplicar correção da TR (Banco Central) ao saldo devedor
+        </label>
+        <p class="note">Quando ativado, o saldo é corrigido mensalmente antes do cálculo de juros. Requer a data do 1º vencimento.</p>
       </div>
 
       <div class="row two">
         <div>
           <label for="sistema">Sistema</label>
-          <select id="sistema">
+          <select id="sistema" required>
             <option value="price">PRICE</option>
             <option value="sac">SAC</option>
           </select>
@@ -139,7 +169,7 @@
 
         <div>
           <label for="dataInicio">1º vencimento</label>
-          <input id="dataInicio" type="date">
+          <input id="dataInicio" type="date" required>
         </div>
       </div>
 
@@ -170,7 +200,6 @@
     </form>
   </section>
 
-  <!-- COLUNA 2 – RESULTADOS -->
   <section class="card">
     <div class="metrics">
       <div class="metric"><div class="label">Prestação inicial</div><div class="value" id="prestacaoIni">—</div></div>
@@ -181,15 +210,14 @@
 
     <canvas id="grafico"></canvas>
 
-    <div class="row" style="margin-top:14px;">
-      <button class="btn" id="baixarCsv" type="button">Baixar CSV</button>
-      <button class="btn" id="copiarLink" type="button">Copiar link</button>
-      <button class="btn" id="baixarPdf" type="button">Exportar PDF</button>
+    <div class="row" style="margin-top:14px; display:flex; gap:10px;">
+      <button class="btn" id="baixarCsv" type="button" style="flex: 1;">Baixar CSV</button>
+      <button class="btn" id="copiarLink" type="button" style="flex: 1;">Copiar link</button>
+      <button class="btn" id="baixarPdf" type="button" style="flex: 1;">Exportar PDF</button>
     </div>
 
   </section>
 
-  <!-- TABELA COMPLETA -->
   <section class="card" style="grid-column:1 / -1">
     <h2 style="margin:0 0 10px">Cronograma de amortização</h2>
 
@@ -207,7 +235,7 @@
             <th>Saldo (R$)</th>
           </tr>
         </thead>
-        <tbody></tbody>
+        <tbody></tbody> 
       </table>
     </div>
   </section>
@@ -218,7 +246,6 @@
   © <span id="ano"></span> Simplão Invest — Ferramentas financeiras gratuitas.
 </footer>
 
-<!-- IMPORTA O JS COMPLETO -->
 <script src="amortizacao.js"></script>
 
 </body>
